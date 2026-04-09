@@ -1,39 +1,117 @@
 {
   "expo": {
-    "name": "emobilier",
-    "slug": "emobilier",
+    "name": "Uzisha",
+    "slug": "uzisha",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "emobilier",
+    "icon": "./assets/images/uzishaapp.png",
+    "scheme": "uzisha",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/images/uzisha.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.uzisha.app",
+      "associatedDomains": [
+        "applinks:uzisha.netlify.app"
+      ]
     },
     "android": {
+      "package": "com.uzisha.app",
+      "compileSdkVersion": 36,
+      "targetSdkVersion": 36,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "applinks:uzisha.netlify.app",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/images/uzisha.png",
+        "backgroundImage": "./assets/images/uzisha.png",
+        "monochromeImage": "./assets/images/uzisha.png"
       },
+      "permissions": [
+        "POST_NOTIFICATIONS",
+        "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS",
+        "ACCESS_NETWORK_STATE",
+        "INTERNET",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.CAMERA"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/uzisha.png"
     },
     "plugins": [
-      "expo-router"
+      "./fix-build.js",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Autoriser Uzisha à accéder au micro pour les messages vocaux."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Autoriser Uzisha à accéder à votre caméra",
+          "microphonePermission": "Autoriser Uzisha à accéder à votre microphone"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "kotlinVersion": "2.0.21"
+          }
+        }
+      ],
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "sounds": [
+            "./assets/sounds/message.wav"
+          ],
+          "icon": "./assets/images/uzisha.png",
+          "color": "#06B6D4"
+        }
+      ],
+      "expo-sharing",
+      "expo-video",
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "24186992-e5e7-4b7a-a24c-9b18da37c1ca"
+      }
+    },
+    "owner": "jasman"
   }
 }

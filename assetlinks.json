@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.uzisha.app",
+    "sha256_cert_fingerprints": ["25:40:E0:12:C3:46:7A:1C:13:BC:8F:90:2E:80:62:C2:C3:C0:50:F3:9C:26:43:FB:75:3E:F5:EE:26:16:E9:79"]
+  }
+}]

@@ -1,0 +1,10 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appID": "VOTRE_TEAM_ID.com.uzisha.app",
+        "paths": ["*"]
+      }
+    ]
+  }
+}
