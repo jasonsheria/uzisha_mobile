@@ -24,14 +24,14 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const systemColorScheme = useSystemColorScheme();
 
   // État initial sur 'system' ou 'light' selon votre préférence
-  const [theme, setThemeState] = useState<ThemeType>('system');
+  const [theme, setThemeState] = useState<ThemeType>('light');
 
   // Initialisation des valeurs animées (utilisées pour les headers et tab bar)
   const scrollX = useRef(new Animated.Value(0)).current;
   const scrollY = useRef(new Animated.Value(0)).current;
   const dynamicColor = scrollX.interpolate({
     inputRange: [0, width, width * 2],
-    outputRange: ['#0ea5e9', '#d4af37', '#ef4444'], // TECH, LUXURY, SPORT
+    outputRange: ['#06B6D4', '#d4af37', '#ef4444'], // TECH, LUXURY, SPORT
     extrapolate: 'clamp',
   });
   /**

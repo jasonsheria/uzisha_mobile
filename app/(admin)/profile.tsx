@@ -528,7 +528,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 16,
+    padding: 26,
+    paddingBottom : 30,
     gap: 20,
   },
   profileHeader: {

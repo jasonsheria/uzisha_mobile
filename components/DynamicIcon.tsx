@@ -11,7 +11,7 @@ interface DynamicIconProps {
 
 export const DynamicIcon = ({ name, size, style }: DynamicIconProps) => {
   const { dynamicColor } = useTheme();
-  const [currentColor, setCurrentColor] = useState<string>('#0ea5e9');
+  const [currentColor, setCurrentColor] = useState<string>('#06B6D4');
 
   // Correction du nom
   const safeName = (name as string) === 'shield-house' ? 'home-shield' : name;

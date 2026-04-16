@@ -1,11 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Image, FlatList,
+  View, Text, StyleSheet, TouchableOpacity, Image,
   KeyboardAvoidingView, Platform, TextInput, ActivityIndicator,
   Alert, Dimensions, StatusBar, Modal, Animated, ScrollView,
   Pressable, Keyboard, LayoutAnimation,
-  UIManager
+  UIManager, FlatList
 } from 'react-native';
+
+// Create Animated FlatList
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList)<Message>;
+
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -22,7 +26,7 @@ import * as Contacts from 'expo-contacts';
 import { BlurView } from 'expo-blur';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-
+import { LinearGradient } from 'expo-linear-gradient';
 // Configuration & Utils
 import { supabase } from '@/utils/supabase';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -72,6 +76,7 @@ const PulsingAvatar = ({ uri, size = 100 }: { uri: string, size?: number }) => {
   );
 };
 import Colors from '@/constants/Colors';
+import { isLoaded } from 'expo-font';
 // --- CONFIGURATION ---
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -179,9 +184,17 @@ export default function MegaMessagingScreen() {
   // Call States
   const [callSession, setCallSession] = useState<CallSession | null>(null);
   const [callTimer, setCallTimer] = useState(0);
-
+  useEffect(() => {
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      LayoutAnimation.easeInEaseOut(); // <--- C'est probablement lui qui bloque le retour
+    });
+    return () => keyboardDidHideListener.remove();
+  }, []);
   // --- INITIALISATION ---
   useEffect(() => {
+    // faire un test de savoir si je ne suis pas connecté pour rediriger vers le login
+
+
     if (conversationId && currentUserId) {
       const channel = subscribeToMessages(conversationId, currentUserId);
       return () => {
@@ -442,7 +455,7 @@ export default function MegaMessagingScreen() {
     }
   };
 
-  // --- AUDIO ---
+  // --- AUDIO ---F
 
   const startAudioRecording = async () => {
     try {
@@ -599,21 +612,21 @@ export default function MegaMessagingScreen() {
       }
     };
   }, [audioPlayback]);
-const MessageVideo = ({ sourceUri }: { sourceUri: string }) => {
-  const player = useVideoPlayer(sourceUri, (player : any) => {
-    player.loop = false;
-    player.muted = true;
-  });
+  const MessageVideo = ({ sourceUri }: { sourceUri: string }) => {
+    const player = useVideoPlayer(sourceUri, (player: any) => {
+      player.loop = false;
+      player.muted = true;
+    });
 
-  return (
-    <VideoView
-      style={styles.messageVideo}
-      player={player}
-      allowsFullscreen
-      allowsPictureInPicture
-    />
-  );
-};
+    return (
+      <VideoView
+        style={styles.messageVideo}
+        player={player}
+        allowsFullscreen
+        allowsPictureInPicture
+      />
+    );
+  };
   const handlePlayPauseAudio = async (item: Message) => {
     if (!item.media_url) return;
     if (playingAudioId === item.id) {
@@ -759,7 +772,7 @@ const MessageVideo = ({ sourceUri }: { sourceUri: string }) => {
 
   // --- INTERFACES MODALES ---
   // --- RENDU DES MESSAGES ---
-  if (!currentUserId) {
+  if (!isLoaded) {
     return (
       //  creer un skeleton de chargement pour le chat
 
@@ -781,298 +794,338 @@ const MessageVideo = ({ sourceUri }: { sourceUri: string }) => {
 
     );
   }
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0F172A' : '#F8FAFC' }]} edges={['top']}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+    <KeyboardAvoidingView
+      style={{ flex: 1, height : 400 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0} // ajuste selon ton header
 
-      {/* HEADER PREMIUM */}
-      <BlurView intensity={90} tint={isDark ? 'dark' : 'light'} style={styles.header}>
-        <View style={styles.headerTop}>
-          {/* <TouchableOpacity onPress={() => {
-           
-              router.push('/messaging/index');
-            
-          
-          }} 
-          style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={28} color="#06B6D4" />
-          </TouchableOpacity> */}
+    >
+      <LinearGradient
+        colors={isDark ? ['#0F172A', '#1E293B', '#334155'] : ['#F8FAFC', '#E0F2FE', '#BAE6FD']}
+        style={{ flex: 1 }}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
 
-          <Pressable style={styles.userInfo} onPress={() => {/* Profil */ }}>
-            <Image source={{ uri: otherUser?.avatar || `https://i.pravatar.cc/150?u=${agentId}` }} style={styles.headerAvatar} />
-            <View style={{ marginLeft: 10 }}>
-              <Text style={[styles.headerName, { color: isDark ? '#FFF' : '#1E293B' }]}>{otherUser?.name || "..."}</Text>
-              <View style={styles.onlineRow}>
-                <View style={styles.onlineDot} />
-                <Text style={styles.headerStatus}>En ligne</Text>
+        <SafeAreaView style={[styles.container]} edges={['top']}>
+
+          <View style={{ flex: 1 }}>
+            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+
+            {/* HEADER PREMIUM */}
+            <BlurView intensity={90} tint={isDark ? 'dark' : 'light'} style={styles.header}>
+              <View style={styles.headerTop}>
+
+
+                <Pressable style={styles.userInfo} onPress={() => {/* Profil */ }}>
+                  <Image source={{ uri: otherUser?.avatar || `` }} style={styles.headerAvatar} />
+                  <View style={{ marginLeft: 10 }}>
+                    <Text style={[styles.headerName, { color: isDark ? '#FFF' : '#1E293B' }]}>{otherUser?.name || "..."}</Text>
+                    <View style={styles.onlineRow}>
+                      <View style={styles.onlineDot} />
+                      <Text style={styles.headerStatus}>En ligne</Text>
+                    </View>
+                  </View>
+                </Pressable>
+
+                <View style={styles.headerActions}>
+                  <TouchableOpacity onPress={() => startCall('video')} style={styles.actionBtn}>
+                    <Feather name="video" size={20} color="#06B6D4" />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => startCall('audio')} style={styles.actionBtn}>
+                    <Feather name="phone" size={20} color="#06B6D4" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.actionBtn}>
+                    <Entypo name="dots-three-vertical" size={18} color="#94A3B8" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </BlurView>
+
+            {/* LISTE DES MESSAGES */}
+            <AnimatedFlatList
+              ref={flatListRef}
+              data={messages}
+              renderItem={renderMessage}
+              inverted
+              keyExtractor={(item, index) => `${item.id}-${index}`}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20, paddingTop: 60 }}
+              onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+              ListEmptyComponent={() => loadingHistory ? <ActivityIndicator size="large" color="#06B6D4" style={{ marginTop: 100 }} /> : null}
+            />
+
+            {/* BARRE D'ENTRÉE (INPUT) */}
+
+            <View style={[styles.inputContainer, { backgroundColor: isDark ? '#1E293B' : '#FFF' }]}>
+
+              <TouchableOpacity
+                style={styles.attachBtn}
+                onPress={() => {
+                  LayoutAnimation.easeInEaseOut();
+                  setShowAttachMenu(!showAttachMenu);
+                }}
+              >
+                <Animated.View style={{ transform: [{ rotate: showAttachMenu ? '45deg' : '0deg' }] }}>
+                  <Feather name="plus" size={24} color="#06B6D4" />
+                </Animated.View>
+              </TouchableOpacity>
+
+              <View style={[styles.textInputWrapper, { backgroundColor: isDark ? '#334155' : '#F1F5F9' }]}>
+                {isRecordingAudio ? (
+                  <View style={styles.recordingRow}>
+                    <View style={styles.redDot} />
+                    <Text style={styles.recordingTime}>{formatTime(audioDuration)}</Text>
+                    <Text style={styles.slideCancel}>Faites glisser pour annuler</Text>
+                  </View>
+                ) : (
+                  <TextInput
+                    ref={inputRef}
+                    style={[styles.textInput, { color: isDark ? '#FFF' : '#1E293B' }]}
+                    placeholder="Votre message..."
+                    placeholderTextColor="#94A3B8"
+                    value={inputText}
+                    onChangeText={text => {
+                      setInputText(text);
+                      if (conversationId && currentUserId) {
+                        supabase.channel(`chat:${conversationId}`).send({
+                          type: 'broadcast',
+                          event: 'typing',
+                          payload: { userId: currentUserId }
+                        });
+                      }
+                    }}
+                    multiline
+                    onFocus={() => setShowAttachMenu(false)}
+                  />
+                )}
+
+                {!isRecordingAudio && (
+                  <TouchableOpacity onPress={() => setShowCamera(true)} style={styles.camInputBtn}>
+                    <Feather name="camera" size={20} color="#64748B" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View style={styles.mainActionWrapper}>
+                {inputText.trim().length > 0 ? (
+                  <TouchableOpacity
+                    style={styles.sendButton}
+                    onPress={() => sendMessage('text', inputText)}
+                  >
+                    <Ionicons name="send" size={20} color="#FFF" />
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.micButton, isRecordingAudio && styles.micButtonActive]}
+                    onLongPress={startAudioRecording}
+                    onPressOut={() => stopAudioRecording(true)}
+                  >
+                    <MaterialCommunityIcons name="microphone" size={22} color="#f9fbfc" />
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
-          </Pressable>
 
-          <View style={styles.headerActions}>
-            <TouchableOpacity onPress={() => startCall('video')} style={styles.actionBtn}>
-              <Feather name="video" size={20} color="#06B6D4" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => startCall('audio')} style={styles.actionBtn}>
-              <Feather name="phone" size={20} color="#06B6D4" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionBtn}>
-              <Entypo name="dots-three-vertical" size={18} color="#94A3B8" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </BlurView>
-
-      {/* LISTE DES MESSAGES */}
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        renderItem={renderMessage}
-        inverted
-        keyExtractor={(item, index) => `${item.id}-${index}`}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20, paddingTop: 10 }}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
-        ListEmptyComponent={() => loadingHistory ? <ActivityIndicator size="large" color="#06B6D4" style={{ marginTop: 100 }} /> : null}
-      />
-
-      {/* BARRE D'ENTRÉE (INPUT) */}
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
-        <View style={[styles.inputContainer, { backgroundColor: isDark ? '#1E293B' : '#FFF' }]}>
-
-          <TouchableOpacity
-            style={styles.attachBtn}
-            onPress={() => {
-              LayoutAnimation.easeInEaseOut();
-              setShowAttachMenu(!showAttachMenu);
-            }}
-          >
-            <Animated.View style={{ transform: [{ rotate: showAttachMenu ? '45deg' : '0deg' }] }}>
-              <Feather name="plus" size={24} color="#06B6D4" />
-            </Animated.View>
-          </TouchableOpacity>
-
-          <View style={[styles.textInputWrapper, { backgroundColor: isDark ? '#334155' : '#F1F5F9' }]}>
-            {isRecordingAudio ? (
-              <View style={styles.recordingRow}>
-                <View style={styles.redDot} />
-                <Text style={styles.recordingTime}>{formatTime(audioDuration)}</Text>
-                <Text style={styles.slideCancel}>Faites glisser pour annuler</Text>
-              </View>
-            ) : (
-              <TextInput
-                ref={inputRef}
-                style={[styles.textInput, { color: isDark ? '#FFF' : '#1E293B' }]}
-                placeholder="Votre message..."
-                placeholderTextColor="#94A3B8"
-                value={inputText}
-                onChangeText={text => {
-                  setInputText(text);
-                  if (conversationId && currentUserId) {
-                    supabase.channel(`chat:${conversationId}`).send({
-                      type: 'broadcast',
-                      event: 'typing',
-                      payload: { userId: currentUserId }
-                    });
-                  }
-                }}
-                multiline
-                onFocus={() => setShowAttachMenu(false)}
-              />
-            )}
-
-            {!isRecordingAudio && (
-              <TouchableOpacity onPress={() => setShowCamera(true)} style={styles.camInputBtn}>
-                <Feather name="camera" size={20} color="#64748B" />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <View style={styles.mainActionWrapper}>
-            {inputText.trim().length > 0 ? (
-              <TouchableOpacity
-                style={styles.sendButton}
-                onPress={() => sendMessage('text', inputText)}
+            {/* MENU ATTACHEMENTS */}
+            {/* Nouveau menu attachement animé vertical */}
+            <Modal
+              visible={showAttachMenu}
+              animationType="fade"
+              transparent
+              onRequestClose={() => setShowAttachMenu(false)}
+            >
+              <Pressable
+                style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' }}
+                onPress={() => setShowAttachMenu(false)}
               >
-                <Ionicons name="send" size={20} color="#FFF" />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={[styles.micButton, isRecordingAudio && styles.micButtonActive]}
-                onLongPress={startAudioRecording}
-                onPressOut={() => stopAudioRecording(true)}
-              >
-                <MaterialCommunityIcons name="microphone" size={22} color="#FFF" />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* MENU ATTACHEMENTS */}
-        {showAttachMenu && (
-          <View style={[styles.attachMenu, { backgroundColor: isDark ? '#1E293B' : '#FFF' }]}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.attachScroll}>
-              {[
-                { label: 'Document', icon: 'file-text', color: '#7C3AED', action: pickDocument },
-                {
-                  label: 'Galerie', icon: 'image', color: '#06B6D4', action: async () => {
-                    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] });
-                    if (!res.canceled) {
-                      const url = await uploadFile(res.assets[0].uri, 'images');
-                      if (url) sendMessage('image', url);
-                    }
-                  }
-                },
-                {
-                  label: 'Vidéo', icon: 'video', color: '#F43F5E', action: async () => {
-                    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['videos'] });
-                    if (!res.canceled) {
-                      const url = await uploadFile(res.assets[0].uri, 'video');
-                      if (url) sendMessage('video', url);
-                    }
-                  }
-                },
-                { label: 'Audio', icon: 'headphones', color: '#F59E0B', action: () => { } },
-                { label: 'Lieu', icon: 'map-pin', color: '#10B981', action: () => { } },
-                {
-                  label: 'Contact', icon: 'user', color: '#3B82F6', action: async () => {
-                    // const { status } = await Contacts.requestPermissionsAsync();
-                    // onPress={} 
-                    pickAndSendContact();
-                  }
-                },
-              ].map((item, i) => (
-                <TouchableOpacity key={i} style={styles.attachItem} onPress={item.action}>
-                  <View style={[styles.attachIconCircle, { backgroundColor: item.color }]}>
-                    <Feather name={item.icon as any} size={22} color="#FFF" />
+                <Animated.View
+                  style={{
+                    backgroundColor: isDark ? '#1E293B' : '#FFF',
+                    borderTopLeftRadius: 24,
+                    borderTopRightRadius: 24,
+                    paddingTop: 18,
+                    paddingBottom: 32,
+                    paddingHorizontal: 18,
+                    minHeight: 220,
+                    elevation: 10,
+                    shadowColor: '#000',
+                    shadowOpacity: 0.18,
+                    shadowRadius: 16,
+                    transform: [{ translateY: 0 }],
+                  }}
+                >
+                  <View style={{ alignItems: 'center', marginBottom: 10 }}>
+                    <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#CBD5E1', marginBottom: 10 }} />
+                    <TouchableOpacity onPress={() => setShowAttachMenu(false)} style={{ position: 'absolute', right: 0, top: -2, padding: 6 }}>
+                      <Feather name="x" size={26} color={isDark ? '#FFF' : '#64748B'} />
+                    </TouchableOpacity>
                   </View>
-                  <Text style={[styles.attachLabel, { color: isDark ? '#94A3B8' : '#64748B' }]}>{item.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-        <View style={{ height: insets.bottom + 5 }} />
-      </KeyboardAvoidingView>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.attachScroll, { paddingBottom: 8 }]}>
+                    {[
+                      { label: 'Document', icon: 'file-text', color: '#7C3AED', action: pickDocument },
+                      {
+                        label: 'Galerie', icon: 'image', color: '#06B6D4', action: async () => {
+                          const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] });
+                          if (!res.canceled) {
+                            const url = await uploadFile(res.assets[0].uri, 'images');
+                            if (url) sendMessage('image', url);
+                          }
+                        }
+                      },
+                      {
+                        label: 'Vidéo', icon: 'video', color: '#F43F5E', action: async () => {
+                          const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['videos'] });
+                          if (!res.canceled) {
+                            const url = await uploadFile(res.assets[0].uri, 'video');
+                            if (url) sendMessage('video', url);
+                          }
+                        }
+                      },
+                      { label: 'Audio', icon: 'headphones', color: '#F59E0B', action: () => { } },
+                      { label: 'Lieu', icon: 'map-pin', color: '#10B981', action: () => { } },
+                      {
+                        label: 'Contact', icon: 'user', color: '#3B82F6', action: async () => {
+                          pickAndSendContact();
+                        }
+                      },
+                    ].map((item, i) => (
+                      <TouchableOpacity key={i} style={styles.attachItem} onPress={item.action}>
+                        <View style={[styles.attachIconCircle, { backgroundColor: item.color }]}>
+                          <Feather name={item.icon as any} size={22} color="#FFF" />
+                        </View>
+                        <Text style={[styles.attachLabel, { color: isDark ? '#94A3B8' : '#64748B' }]}>{item.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </Animated.View>
+              </Pressable>
+            </Modal>
+            <View style={{ height: insets.bottom + 5 }} />
 
-      {/* --- MODALES --- */}
+            {/* --- MODALES --- */}
 
-      {/* 1. CAMÉRA AVANCÉE */}
-      <Modal visible={showCamera} animationType="slide">
-        {camPerm?.granted ? (
-          <CameraView
-            style={styles.fullCamera}
-            ref={cameraRef}
-            facing={cameraType}
-            mode={isRecordingVideo ? "video" : "picture"}
-          >
-            <SafeAreaView style={styles.cameraControls}>
-              <View style={styles.camHeader}>
-                <TouchableOpacity onPress={() => setShowCamera(false)}>
+            {/* 1. CAMÉRA AVANCÉE */}
+            <Modal visible={showCamera} animationType="slide">
+              {camPerm?.granted ? (
+                <CameraView
+                  style={styles.fullCamera}
+                  ref={cameraRef}
+                  facing={cameraType}
+                  mode={isRecordingVideo ? "video" : "picture"}
+                >
+                  <SafeAreaView style={styles.cameraControls}>
+                    <View style={styles.camHeader}>
+                      <TouchableOpacity onPress={() => setShowCamera(false)}>
+                        <Ionicons name="close" size={32} color="#FFF" />
+                      </TouchableOpacity>
+                      {isRecordingVideo && (
+                        <View style={styles.videoBadge}>
+                          <View style={styles.redDot} />
+                          <Text style={styles.videoBadgeText}>{formatTime(videoTimer)}</Text>
+                        </View>
+                      )}
+                      <TouchableOpacity onPress={() => setCameraType(t => t === 'back' ? 'front' : 'back')}>
+                        <MaterialIcons name="flip-camera-ios" size={28} color="#FFF" />
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.camFooter}>
+                      <Text style={styles.camHint}>
+                        Appuyer pour Photo • Long pour Vidéo
+                      </Text>
+                      <TouchableOpacity
+                        onLongPress={startVideoRecording}
+                        onPressOut={() => isRecordingVideo && cameraRef.current?.stopRecording()}
+                        onPress={async () => {
+                          const p = await cameraRef.current?.takePictureAsync();
+                          if (p) {
+                            setShowCamera(false);
+                            const url = await uploadFile(p.uri, 'images');
+                            if (url) sendMessage('image', url);
+                          }
+                        }}
+                        style={[styles.bigCaptureBtn, isRecordingVideo && { borderColor: '#EF4444' }]}
+                      >
+                        <View style={[styles.innerCapture, isRecordingVideo && { backgroundColor: '#EF4444', borderRadius: 10 }]} />
+                      </TouchableOpacity>
+                    </View>
+                  </SafeAreaView>
+                </CameraView>
+              ) : (
+                <View style={[styles.fullCamera, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }]}>
+                  <Text style={{ color: '#fff', fontSize: 18, marginBottom: 20 }}>Autorisez l'accès à la caméra pour utiliser cette fonctionnalité.</Text>
+                  <TouchableOpacity onPress={requestCam} style={{ backgroundColor: '#06B6D4', padding: 16, borderRadius: 10 }}>
+                    <Text style={{ color: '#fff', fontWeight: 'bold' }}>Autoriser la caméra</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setShowCamera(false)} style={{ marginTop: 20 }}>
+                    <Text style={{ color: '#fff', textDecorationLine: 'underline' }}>Annuler</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </Modal>
+
+            {/* 2. VISIONNEUSE D'IMAGE */}
+            <Modal visible={!!selectedImage} transparent animationType="fade">
+              <View style={styles.viewerContainer}>
+                <TouchableOpacity style={styles.closeViewer} onPress={() => setSelectedImage(null)}>
                   <Ionicons name="close" size={32} color="#FFF" />
                 </TouchableOpacity>
-                {isRecordingVideo && (
-                  <View style={styles.videoBadge}>
-                    <View style={styles.redDot} />
-                    <Text style={styles.videoBadgeText}>{formatTime(videoTimer)}</Text>
+                <Image source={{ uri: selectedImage! }} style={styles.viewerImage} resizeMode="contain" />
+              </View>
+            </Modal>
+
+            {/* 3. APPEL FULL SCREEN */}
+            <Modal visible={!!callSession} animationType="slide">
+              <BlurView intensity={100} tint="dark" style={styles.callModal}>
+                <SafeAreaView style={styles.callContent}>
+                  <View style={styles.callInfoBox}>
+                    <PulsingAvatar uri={otherUser?.avatar || `https://i.pravatar.cc/150?u=${agentId}`} />
+                    <Text style={styles.callUserName}>{otherUser?.name}</Text>
+                    <Text style={styles.callStatusText}>
+                      {callSession?.status === 'dialing' ? 'Appel en cours...' : formatTime(callTimer)}
+                    </Text>
                   </View>
-                )}
-                <TouchableOpacity onPress={() => setCameraType(t => t === 'back' ? 'front' : 'back')}>
-                  <MaterialIcons name="flip-camera-ios" size={28} color="#FFF" />
-                </TouchableOpacity>
-              </View>
 
-              <View style={styles.camFooter}>
-                <Text style={styles.camHint}>
-                  Appuyer pour Photo • Long pour Vidéo
-                </Text>
-                <TouchableOpacity
-                  onLongPress={startVideoRecording}
-                  onPressOut={() => isRecordingVideo && cameraRef.current?.stopRecording()}
-                  onPress={async () => {
-                    const p = await cameraRef.current?.takePictureAsync();
-                    if (p) {
-                      setShowCamera(false);
-                      const url = await uploadFile(p.uri, 'images');
-                      if (url) sendMessage('image', url);
-                    }
-                  }}
-                  style={[styles.bigCaptureBtn, isRecordingVideo && { borderColor: '#EF4444' }]}
-                >
-                  <View style={[styles.innerCapture, isRecordingVideo && { backgroundColor: '#EF4444', borderRadius: 10 }]} />
-                </TouchableOpacity>
-              </View>
-            </SafeAreaView>
-          </CameraView>
-        ) : (
-          <View style={[styles.fullCamera, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }]}>
-            <Text style={{ color: '#fff', fontSize: 18, marginBottom: 20 }}>Autorisez l'accès à la caméra pour utiliser cette fonctionnalité.</Text>
-            <TouchableOpacity onPress={requestCam} style={{ backgroundColor: '#06B6D4', padding: 16, borderRadius: 10 }}>
-              <Text style={{ color: '#fff', fontWeight: 'bold' }}>Autoriser la caméra</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowCamera(false)} style={{ marginTop: 20 }}>
-              <Text style={{ color: '#fff', textDecorationLine: 'underline' }}>Annuler</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </Modal>
+                  {callSession?.type === 'video' && callSession?.status === 'connected' && (
+                    <View style={styles.miniVideoPreview}>
+                      <CameraView style={{ flex: 1 }} facing="front" />
+                    </View>
+                  )}
 
-      {/* 2. VISIONNEUSE D'IMAGE */}
-      <Modal visible={!!selectedImage} transparent animationType="fade">
-        <View style={styles.viewerContainer}>
-          <TouchableOpacity style={styles.closeViewer} onPress={() => setSelectedImage(null)}>
-            <Ionicons name="close" size={32} color="#FFF" />
-          </TouchableOpacity>
-          <Image source={{ uri: selectedImage! }} style={styles.viewerImage} resizeMode="contain" />
-        </View>
-      </Modal>
+                  <View style={styles.callActionsBox}>
+                    <TouchableOpacity style={styles.callCircleBtn}>
+                      <Feather name="mic-off" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.callCircleBtn, { backgroundColor: '#EF4444', width: 80, height: 80 }]}
+                      onPress={() => setCallSession(null)}
+                    >
+                      <MaterialCommunityIcons name="phone-hangup" size={35} color="#FFF" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.callCircleBtn}>
+                      <Ionicons name="videocam-off" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                  </View>
+                </SafeAreaView>
+              </BlurView>
+            </Modal>
 
-      {/* 3. APPEL FULL SCREEN */}
-      <Modal visible={!!callSession} animationType="slide">
-        <BlurView intensity={100} tint="dark" style={styles.callModal}>
-          <SafeAreaView style={styles.callContent}>
-            <View style={styles.callInfoBox}>
-              <PulsingAvatar uri={otherUser?.avatar || `https://i.pravatar.cc/150?u=${agentId}`} />
-              <Text style={styles.callUserName}>{otherUser?.name}</Text>
-              <Text style={styles.callStatusText}>
-                {callSession?.status === 'dialing' ? 'Appel en cours...' : formatTime(callTimer)}
-              </Text>
-            </View>
-
-            {callSession?.type === 'video' && callSession?.status === 'connected' && (
-              <View style={styles.miniVideoPreview}>
-                <CameraView style={{ flex: 1 }} facing="front" />
+            {/* 4. OVERLAY D'UPLOAD */}
+            {isUploading && (
+              <View style={styles.uploadOverlay}>
+                <BlurView intensity={30} style={styles.uploadCard}>
+                  <ActivityIndicator size="large" color="#06B6D4" />
+                  <Text style={styles.uploadText}>Envoi en cours...</Text>
+                </BlurView>
               </View>
             )}
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+    </KeyboardAvoidingView>
 
-            <View style={styles.callActionsBox}>
-              <TouchableOpacity style={styles.callCircleBtn}>
-                <Feather name="mic-off" size={24} color="#FFF" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.callCircleBtn, { backgroundColor: '#EF4444', width: 80, height: 80 }]}
-                onPress={() => setCallSession(null)}
-              >
-                <MaterialCommunityIcons name="phone-hangup" size={35} color="#FFF" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.callCircleBtn}>
-                <Ionicons name="videocam-off" size={24} color="#FFF" />
-              </TouchableOpacity>
-            </View>
-          </SafeAreaView>
-        </BlurView>
-      </Modal>
-
-      {/* 4. OVERLAY D'UPLOAD */}
-      {isUploading && (
-        <View style={styles.uploadOverlay}>
-          <BlurView intensity={30} style={styles.uploadCard}>
-            <ActivityIndicator size="large" color="#06B6D4" />
-            <Text style={styles.uploadText}>Envoi en cours...</Text>
-          </BlurView>
-        </View>
-      )}
-
-    </SafeAreaView>
   );
 }
 
@@ -1111,7 +1164,11 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize'
   },
 
-  messageWrapper: { marginBottom: 4, flexDirection: 'row' },
+  messageWrapper: {
+    marginBottom: 4, flexDirection: 'row'
+
+
+  },
   mineWrapper: { justifyContent: 'flex-end' },
   theirWrapper: { justifyContent: 'flex-start' },
   bubble: {
@@ -1169,9 +1226,14 @@ const styles = StyleSheet.create({
   fileSize: { fontSize: 11, color: '#94A3B8', marginTop: 2 },
 
   inputContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'flex-end',
     padding: 10,
+    // marginTop : 44,
     paddingTop: 5
   },
   attachBtn: { padding: 10, marginBottom: 2 },
@@ -1182,7 +1244,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingHorizontal: 12,
     paddingVertical: 5,
-    minHeight: 45
+    minHeight: 45,
+
   },
   textInput: { flex: 1, paddingVertical: 8, fontSize: 16, maxHeight: 120 },
   camInputBtn: { padding: 8 },
@@ -1199,7 +1262,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#64748B',
+    backgroundColor: '#70c6ea',
     justifyContent: 'center',
     alignItems: 'center'
   },
@@ -1212,10 +1275,13 @@ const styles = StyleSheet.create({
 
   attachMenu: {
     paddingVertical: 15,
+    paddingHorizontal: 10,
+    maxWidth: 130,
+    gap: 10,
     borderTopWidth: 0.5,
     borderColor: 'rgba(0,0,0,0.1)'
   },
-  attachScroll: { paddingHorizontal: 20 },
+  attachScroll: { paddingHorizontal: 10 },
   attachItem: { alignItems: 'center', marginRight: 25 },
   attachIconCircle: { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
   attachLabel: { fontSize: 12, fontWeight: '500' },
@@ -1279,5 +1345,7 @@ const styles = StyleSheet.create({
 
   uploadOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', zIndex: 100 },
   uploadCard: { padding: 30, borderRadius: 20, alignItems: 'center', overflow: 'hidden' },
-  uploadText: { color: '#FFF', marginTop: 15, fontWeight: '600' }
+  uploadText: { color: '#FFF', marginTop: 15, fontWeight: '600' },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
+
 });

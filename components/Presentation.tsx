@@ -20,6 +20,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { BOUTIQUE, Property, PropertyType } from '@/types';
 import { useTheme } from '@/contexts/ThemeContext';
+import { router } from  'expo-router';
 // --- CONFIGURATION ET CONSTANTES ---
 const { width, height } = Dimensions.get('window');
 const ITEM_WIDTH = width * 0.85;
@@ -29,7 +30,7 @@ const retouch = require('../assets/images/retouch.jpg');
 
 // --- TYPES & DONNÉES (MARKETING DATA) ---
 const THEMES = {
-    TECH: { primary: '#0ea5e9', secondary: '#020617', accent: '#38bdf8', label: 'E-COMMERCE' },
+    TECH: { primary: '#06B6D4', secondary: '#020617', accent: '#38bdf8', label: 'E-COMMERCE' },
     LUXURY: { primary: '#d4af37', secondary: '#1a1a1a', accent: '#f1e3a0', label: 'IMMOBILIER' },
     SPORT: { primary: '#ef4444', secondary: '#450a0a', accent: '#f87171', label: 'EQUIPEMENT' },
     //   AUTRES THÈMES POSSIBLES :
@@ -39,7 +40,7 @@ const THEMES = {
     NOURRITURE: { primary: '#f59e0b', secondary: '#4b1d0c', accent: '#fdba74', label: 'NOURRITURE' },
     NATURE: { primary: '#22c55e', secondary: '#064e3b', accent: '#86efac', label: 'NATURE' },
     MOUNTAIN: { primary: '#3b82f6', secondary: '#1e40af', accent: '#93c5fd', label: 'MONTAGNE' },
-    TECHNOLOGIE: { primary: '#0ea5e9', secondary: '#020617', accent: '#38bdf8', label: 'TECHNOLOGIE' },
+    TECHNOLOGIE: { primary: '#06B6D4', secondary: '#020617', accent: '#38bdf8', label: 'TECHNOLOGIE' },
     AVENTURE: { primary: '#f97316', secondary: '#7c2d12', accent: '#fdba74', label: 'AVENTURE' },
     CINEMA: { primary: '#8b5cf6', secondary: '#2a0a4e', accent: '#c084fc', label: 'CINEMA' },
 };
@@ -63,7 +64,7 @@ const DATA = [
         title: 'Vente dans les magazin Uzisha Tech',
         brand: 'Uzisha Tech',
         category: 'Electronique',
-        price: 'Tous les prix',
+        price: 'Devenez Partenaire',
         rating: 4.9,
         reviews: 128,
         image: retouch,
@@ -76,7 +77,7 @@ const DATA = [
         title: 'Appartement, Maison, Prendre en location ou à vendre',
         brand: 'e-Mobilier',
         category: 'Résidentiel',
-        price: 'Tout les prix',
+        price: 'Visitez nos boutiques',
         rating: 5.0,
         reviews: 42,
         image: require('../assets/images/ulistrator.jpg'),
@@ -86,7 +87,7 @@ const DATA = [
     },
     {
         id: '3',
-        title: 'Faites vos commandes et Achats en toute sécurité',
+        title: 'commandes et Achats en toute sécurité',
         brand: 'Commande & Achat',
         category: 'Mode',
         price: 'Tous les prix',
@@ -101,14 +102,7 @@ const DATA = [
 ];
 
 // --- COMPOSANTS ATOMIQUES (UI/UX) ---
-
-const CustomStatusBar = ({ backgroundColor, ...props }: any) => (
-    <View style={[styles.statusBar, { backgroundColor }]}>
-        <SafeAreaView>
-            <StatusBar translucent backgroundColor={backgroundColor} {...props} />
-        </SafeAreaView>
-    </View>
-);
+;
 
 const GlassButton = ({ icon, onPress, style }: any) => (
     <TouchableOpacity onPress={onPress} style={[styles.glassBtnContainer, style]}>
@@ -152,7 +146,7 @@ export default function ProfessionalAppDesign({ shouldReset }: { shouldReset: bo
 
     const handleScroll = Animated.event(
         [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-        { useNativeDriver: false } // Indispensable pour l'interpolation de couleurs
+        { useNativeDriver: true } // Indispensable pour l'interpolation de couleurs
     );
 
     const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
@@ -188,7 +182,7 @@ export default function ProfessionalAppDesign({ shouldReset }: { shouldReset: bo
             <GlassButton icon="menu" />
             <View style={styles.logoBox}>
                 <Animated.Text style={[styles.logoTitle, { color: '#FFF' }]}>
-                    UZISHA <Text style={{ fontWeight: '300', color: '#0ea5e9' }}>App</Text>
+                    UZISHA <Text style={{ fontWeight: '300', color: '#06B6D4' }}>App</Text>
                 </Animated.Text>
             </View>
             <GlassButton icon="shopping-outline" />
@@ -227,7 +221,7 @@ export default function ProfessionalAppDesign({ shouldReset }: { shouldReset: bo
                         {/* Badges Marketing Flottants */}
                         <View style={styles.cardBadges}>
                             {item.isRare && <Badge text="RARE" icon="diamond" color="#F59E0B" />}
-                            <Badge text="VÉRIFIÉ" icon="check-decagram" color="#0ea5e9" />
+                            <Badge text="VÉRIFIÉ" icon="check-decagram" color="#06B6D4" />
                         </View>
 
                         {/* Infos de base sur l'image */}
@@ -255,20 +249,40 @@ export default function ProfessionalAppDesign({ shouldReset }: { shouldReset: bo
                             <View>
                                 <Text style={styles.priceLabel}>Prix Final</Text>
                                 <View style={styles.priceRow}>
-                                    <Text style={[styles.currency, { color: item.theme.primary }]}>$</Text>
                                     <Text style={styles.priceValue}>{item.price}</Text>
                                 </View>
                             </View>
+                            {(() => {
+                                // Définition de la fonction de redirection selon l'ID
+                                const handlePress = () => {
+                                    switch (item.id) {
+                                        case '1':
+                                            router.push('/(admin)/articles');
+                                            break;
+                                        case '2':
+                                            router.push('/(tabs)/boutiques');
+                                            break;
+                                        default:
+                                            router.push('/(tabs)/bookings');
+                                            // router.push('/votre-chemin-commande'); // Si vous avez un lien
+                                            break;
+                                    }
+                                };
 
-                            <TouchableOpacity activeOpacity={0.8}>
-                                <LinearGradient
-                                    colors={[item.theme.primary, item.theme.accent]}
-                                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                                    style={styles.actionBtn}
-                                >
-                                    <MaterialCommunityIcons name="arrow-right" size={24} color="#FFF" />
-                                </LinearGradient>
-                            </TouchableOpacity>
+                                return (
+                                    <TouchableOpacity activeOpacity={0.8} onPress={handlePress}>
+                                        <LinearGradient
+                                            colors={[item.theme.primary, item.theme.accent]}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 1 }}
+                                            style={styles.actionBtn}
+                                        >
+                                            <MaterialCommunityIcons name="arrow-right" size={24} color="#FFF" />
+                                        </LinearGradient>
+                                    </TouchableOpacity>
+                                );
+                            })()}
+
                         </View>
                     </BlurView>
                 </Animated.View>
@@ -462,7 +476,7 @@ const styles = StyleSheet.create({
         marginBottom: 5,
     },
     itemCategory: {
-        color: '#0ea5e9',
+        color: '#06B6D4',
         fontSize: 12,
         fontWeight: '800',
         letterSpacing: 2,

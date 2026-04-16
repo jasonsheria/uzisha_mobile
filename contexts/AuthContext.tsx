@@ -13,6 +13,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
   completeOnboarding: () => Promise<void>;
+  syncSupabaseSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -66,7 +67,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
   };
+  const syncSupabaseSession = async () => {
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (!data.session?.user) return;
 
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', data.session.user.id)
+      .maybeSingle();
+
+    if (userError) throw userError;
+
+    const authenticatedUser = userData || {
+      id: data.session.user.id,
+      email: data.session.user.email || '',
+      name: data.session.user.user_metadata?.full_name || 'Utilisateur',
+      isFirstTime: true,
+    };
+
+    // On utilise directement le setUser du Provider
+    setUser(authenticatedUser);
+    
+    // On sauvegarde en local pour persister
+    await crossPlatformStorage.setItem(
+      'auth_user', 
+      crossPlatformStorage.safeStringify(authenticatedUser)
+    );
+  } catch (error) {
+    console.error('Erreur de sync Supabase session', error);
+  }
+};
   const signup = async (email: string, name: string, password: string) => {
     try {
       const { user: newUser, token } = await authService.signup({
@@ -121,6 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         updateUser,
         completeOnboarding,
+        syncSupabaseSession
       }}
     >
       {children}

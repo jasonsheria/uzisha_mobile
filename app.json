@@ -15,6 +15,9 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.uzisha.app",
+      "infoPlist": {
+        "NSPhotoLibraryAddUsageDescription": "Permet d'enregistrer les QR codes dans votre galerie"
+      },
       "associatedDomains": [
         "applinks:uzisha.netlify.app"
       ]

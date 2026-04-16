@@ -30,7 +30,7 @@ const PLANS = [
     id: 'premium',
     name: 'Premium',
     price: 9999,
-    priceFormatted: '9,999 FCFA',
+    priceFormatted: '9,999 FC',
     description: 'Plan complet avec plus de fonctionnalités',
     features: [
       'Annonces illimitées',
@@ -44,7 +44,7 @@ const PLANS = [
     id: 'elite',
     name: 'Elite',
     price: 19999,
-    priceFormatted: '19,999 FCFA',
+    priceFormatted: '19,999 FC',
     description: 'Plan premium avec tous les avantages',
     features: [
       'Tout du plan Premium',

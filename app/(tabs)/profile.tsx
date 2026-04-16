@@ -113,13 +113,13 @@ export default function ProfileScreen() {
         Alert.alert("Demande envoyée", "Votre pièce d'identité est en cours d'examen. Vous recevrez une notification une fois validée.");
       } catch (error) {
         setIsVerifying(false);
-        Alert.alert("Erreur", "Une erreur est survenue lors de l'envoi.");
+        Alert.alert("Erreur", "Fonctionnalité non disponible pour le moment.");
       }
     }, 3000);
   };
 
   const handleLogout = async () => {
-    Alert.alert("Déconnexion", "Quitter Ndaku ?", [
+    Alert.alert("Déconnexion", "Quitter Uzisha ?", [
       { text: "Annuler", style: "cancel" },
       { text: "Se déconnecter", style: "destructive", onPress: async () => {
           setIsLoggingOut(true);
@@ -130,7 +130,7 @@ export default function ProfileScreen() {
   };
 
   const displayName = user?.name || user?.email?.split('@')[0] || 'Utilisateur';
-  const displayEmail = user?.email || 'ndaku@service.com';
+  const displayEmail = user?.email || 'Uzisha@service.com';
   const displayInitial = displayName.charAt(0).toUpperCase();
 
   return (
@@ -174,7 +174,7 @@ export default function ProfileScreen() {
         {/* Menu Section */}
         <View style={styles.menuSection}>
           <Text style={[styles.sectionTitle, { color: isDark ? '#94A3B8' : '#64748B' }]}>Gestion Immobilière</Text>
-          <MenuItem icon="home-group" label="Mes Annonces Ndaku" color="#06B6D4" isDark={isDark} onPress={() => router.push('/(admin)/articles')} />
+          <MenuItem icon="home-group" label="Mes Annonces Uzisha" color="#06B6D4" isDark={isDark} onPress={() => router.push('/(admin)/articles')} />
           <MenuItem icon="calendar-check" label="Mes Réservations" color="#F59E0B" isDark={isDark} onPress={() => router.push('/reservations')} />
           <MenuItem icon="wallet-outline" label="Paiements & Factures" color="#10B981" isDark={isDark} onPress={() => router.push('/(admin)/subscription')} />
 
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   menuItem: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 20, marginBottom: 12, borderWidth: 1 },
   menuIconBg: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
   menuLabel: { flex: 1, marginLeft: 15, fontSize: 15, fontWeight: '600' },
-  logoutButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 35, backgroundColor: 'rgba(239, 68, 68, 0.08)', padding: 18, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.2)' },
+  logoutButton: { marginBottom : 80, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 35, backgroundColor: 'rgba(239, 68, 68, 0.08)', padding: 18, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.2)' },
   logoutText: { color: '#EF4444', fontWeight: '800', fontSize: 16, marginLeft: 10 },
   footerBrand: { textAlign: 'center', color: '#94A3B8', fontSize: 11, marginTop: 25 },
   

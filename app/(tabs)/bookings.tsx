@@ -172,7 +172,66 @@ export default function BookingsScreen() {
       default: return { label: 'Inconnu', color: '#64748B', icon: 'help-circle' };
     }
   };
+const renderAuthGuard = () => (
+  <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+    <LinearGradient
+      colors={isDark ? ['#020617', '#0F172A'] : ['#F8FAFC', '#F1F5F9']}
+      style={StyleSheet.absoluteFill}
+    />
+    
+    <Animated.View style={styles.authContent}>
+      {/* Cercles décoratifs en arrière-plan */}
+      <View style={styles.authIconContainer}>
+        <View style={[styles.authCircle, { width: 220, height: 220, opacity: 0.05, backgroundColor: '#06B6D4' }]} />
+        <View style={[styles.authCircle, { width: 160, height: 160, opacity: 0.1, backgroundColor: '#06B6D4' }]} />
+        <MaterialCommunityIcons name="lock-outline" size={80} color="#06B6D4" />
+      </View>
 
+      <Text style={styles.authTitle}>Espace Personnel</Text>
+      <Text style={styles.authDescription}>
+        Connectez-vous pour accéder à vos réservations, suivre vos achats immobiliers et gérer vos commandes en un clic.
+      </Text>
+
+      <View style={styles.benefitList}>
+        <View style={styles.benefitItem}>
+          <MaterialCommunityIcons name="check-circle" size={20} color="#10B981" />
+          <Text style={styles.benefitText}>Historique sécurisé</Text>
+        </View>
+        <View style={styles.benefitItem}>
+          <MaterialCommunityIcons name="check-circle" size={20} color="#10B981" />
+          <Text style={styles.benefitText}>Suivi en temps réel</Text>
+        </View>
+        <View style={styles.benefitItem}>
+          <MaterialCommunityIcons name="check-circle" size={20} color="#10B981" />
+          <Text style={styles.benefitText}>Support direct agents</Text>
+        </View>
+      </View>
+
+      <TouchableOpacity 
+        style={styles.loginBtn}
+        onPress={() => router.push('/login')}
+        activeOpacity={0.8}
+      >
+        <LinearGradient
+          colors={['#06B6D4', '#0891B2']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.loginGradient}
+        >
+          <Text style={styles.loginBtnText}>Se connecter maintenant</Text>
+          <MaterialCommunityIcons name="arrow-right" size={20} color="#FFF" />
+        </LinearGradient>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={styles.registerBtn}
+        onPress={() => router.push('/signup')}
+      >
+        <Text style={styles.registerBtnText}>Pas encore de compte ? <Text style={{color: '#06B6D4'}}>S'inscrire</Text></Text>
+      </TouchableOpacity>
+    </Animated.View>
+  </View>
+);
   const handleCall = (phone?: string) => {
     if (phone) Linking.openURL(`tel:${phone}`);
   };
@@ -370,13 +429,8 @@ export default function BookingsScreen() {
     );
   };
 
-  if (loading && !refreshing) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#06B6D4" />
-        <Text style={styles.loadingText}>Synchronisation Uzisha</Text>
-      </View>
-    );
+  if (!user) {
+    return renderAuthGuard();
   }
 
   return (
@@ -767,5 +821,85 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     color: '#FFF',
     fontWeight: '900',
     fontSize: 16,
-  }
+  },
+  // À ajouter dans getStyles(isDark)
+authContent: {
+  width: '100%',
+  alignItems: 'center',
+  paddingHorizontal: 30,
+},
+authIconContainer: {
+  width: 200,
+  height: 200,
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginBottom: 30,
+},
+authCircle: {
+  position: 'absolute',
+  borderRadius: 120,
+},
+authTitle: {
+  fontSize: 32,
+  fontWeight: '900',
+  color: isDark ? '#F8FAFC' : '#0F172A',
+  marginBottom: 16,
+  textAlign: 'center',
+},
+authDescription: {
+  fontSize: 16,
+  color: '#64748B',
+  textAlign: 'center',
+  lineHeight: 24,
+  marginBottom: 30,
+},
+benefitList: {
+  width: '100%',
+  backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+  borderRadius: 24,
+  padding: 20,
+  marginBottom: 40,
+  gap: 12,
+},
+benefitItem: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 12,
+},
+benefitText: {
+  fontSize: 14,
+  fontWeight: '600',
+  color: isDark ? '#CBD5E1' : '#475569',
+},
+loginBtn: {
+  width: '100%',
+  height: 60,
+  borderRadius: 20,
+  overflow: 'hidden',
+  shadowColor: '#06B6D4',
+  shadowOffset: { width: 0, height: 10 },
+  shadowOpacity: 0.3,
+  shadowRadius: 20,
+  elevation: 8,
+},
+loginGradient: {
+  flex: 1,
+  flexDirection: 'row',
+  justifyContent: 'center',
+  alignItems: 'center',
+  gap: 10,
+},
+loginBtnText: {
+  color: '#FFF',
+  fontSize: 18,
+  fontWeight: '800',
+},
+registerBtn: {
+  marginTop: 25,
+},
+registerBtnText: {
+  fontSize: 14,
+  fontWeight: '600',
+  color: '#94A3B8',
+},
 });

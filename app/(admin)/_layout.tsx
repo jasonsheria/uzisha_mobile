@@ -17,16 +17,17 @@ import { AdminProvider } from '@/contexts/AdminContext';
 import { useAuth } from '@/hooks/useAuth';
 import AdminDrawerContent from './drawer';
 import { BlurView } from 'expo-blur'; // Optionnel: pour un effet premium sur iOS
-
+import { DynamicIcon } from '@/components/DynamicIcon';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Colors } from '@/constants';
 const { width } = Dimensions.get('window');
 const DRAWER_WIDTH = Platform.OS === 'web' ? 280 : width * 0.75;
 
 export default function AdminLayout() {
-  const isDark = useColorScheme() === 'dark';
   const { user, loading } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(Platform.OS === 'web');
   const drawerAnim = React.useRef(new Animated.Value(Platform.OS === 'web' ? 0 : -DRAWER_WIDTH)).current;
-
+  const { theme, isDark, dynamicColor } = useTheme();
   // Couleurs dynamiques
   const colors = {
     bg: isDark ? '#0F172A' : '#F8FAFC',
@@ -100,9 +101,10 @@ export default function AdminLayout() {
             {/* Header Mobile Style Premium */}
             {Platform.OS !== 'web' && (
               <View style={[styles.mobileHeader, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+
                 <TouchableOpacity
                   onPress={() => setDrawerOpen(!drawerOpen)}
-                  style={[styles.hamburger, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.1)' : 'rgba(99, 102, 241, 0.05)' }]}
+                  style={[styles.hamburger, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.1)' : 'rgba(17, 19, 137, 0.05)' }]}
                 >
                   <MaterialCommunityIcons
                     name={drawerOpen ? 'chevron-left' : 'menu'} // 'menu' est standard et toujours disponible
@@ -110,18 +112,19 @@ export default function AdminLayout() {
                     color={colors.primary}
                   />
                 </TouchableOpacity>
-
                 <View style={styles.headerTitle}>
-                  <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>Administration</Text>
-                  <Text style={[styles.headerTitleText, { color: colors.text }]}>Tableau de bord</Text>
+                  <Text style={styles.headerSubtitle}>Espace Admin</Text>
+                  <Text style={styles.headerTitleText}>Bienvenue, {user.name}</Text>
                 </View>
-
-                <TouchableOpacity style={styles.profileButton}>
-                  <View style={styles.avatarPlaceholder}>
-                    <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'A'}</Text>
-                  </View>
+                {/* Ajouter le bouton de notification */}
+                <TouchableOpacity style={styles.NotificationButton} onPress={() => router.push('/notifications')}>
+                  <MaterialCommunityIcons name="bell-outline" size={24} color={'#06B6D4'} />
                 </TouchableOpacity>
+ 
               </View>
+
+
+
             )}
 
             <View style={{ flex: 1 }}>
@@ -164,12 +167,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mobileHeader: {
-    height: 90,
+    height: 120,
     paddingTop: 40, // Adaptation pour encoche
     paddingHorizontal: 20,
+    display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
+    justifyContent: 'space-between',
+    alignContent: 'space-between',
   },
   hamburger: {
     width: 42,
@@ -178,6 +183,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
+   
+    zIndex: 1100,
   },
   headerTitle: {
     flex: 1,
@@ -189,9 +196,10 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginBottom: 2,
   },
-  headerTitleText: {
+  headerTitleText: { 
     fontSize: 17,
     fontWeight: '700',
+    color : "#94A3B8"
   },
   profileButton: {
     marginLeft: 10,
@@ -210,5 +218,14 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontWeight: 'bold',
     fontSize: 14,
+  },
+  NotificationButton: {
+
+    marginLeft: 'auto',
+     padding: 8,
+     borderRadius: 12,
+      backgroundColor: 'rgba(0,0,0,0.05)',
+      justifyContent: 'center',
+      alignItems: 'center',
   }
 });

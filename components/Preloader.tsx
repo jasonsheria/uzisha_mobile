@@ -13,7 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
-const myLogo = require('../assets/images/logo_uzisha.png');
+// const myLogo = require('../assets/images/logo_uzisha.png');
 
 const Preloader = () => {
   // Valeurs d'animation
@@ -47,7 +47,7 @@ const Preloader = () => {
           toValue: width * 0.75,
           duration: 3500,
           easing: Easing.inOut(Easing.sin),
-          useNativeDriver: false
+          useNativeDriver: true
         }),
       ]),
     ]).start();
@@ -68,13 +68,13 @@ const Preloader = () => {
       <View style={styles.centerContainer}>
         
         {/* LOGO ANIMÉ (Scale combine l'entrée et la respiration) */}
-        <Animated.View style={{
+        {/* <Animated.View style={{
           opacity: logoFade,
           transform: [{ scale: Animated.multiply(logoScale, logoPulse) }],
           marginBottom: 10
         }}>
           <Image source={myLogo} style={styles.logoImage} resizeMode="contain" />
-        </Animated.View>
+        </Animated.View> */}
 
         {/* NOM UZISHA */}
         <Animated.View style={{
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: '#0EA5E9',
+    backgroundColor: '#06B6D4',
   },
   loaderWrapper: {
     width: width * 0.65,

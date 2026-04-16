@@ -1,5 +1,5 @@
 // ...existing code...
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -16,14 +16,12 @@ import {
   Animated,
   ActivityIndicator,
   FlatList,
-  Switch
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WebView } from 'react-native-webview';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAdmin, AdminArticle } from '@/contexts/AdminContext';
-import { useNetwork } from '@/contexts/NetworkContext';
 import { CategoryAttributes } from '@/constants/PropertyCategories';
 import {
   pickImage,
@@ -33,9 +31,6 @@ import {
   uploadMultipleImages,
   uploadMultipleVideos,
 } from '@/utils/uploadService';
-import { DynamicIcon } from '@/components/DynamicIcon';
-import { router } from 'expo-router';
-import { PropertyCard } from '@/components';
 
 const { width } = Dimensions.get('window');
 
@@ -123,7 +118,7 @@ const CATEGORY_DETAILS_FIELDS: Record<string, Array<{ key: string; label: string
     { key: 'marque', label: 'Marque', type: 'text' },
     { key: 'capacite', label: 'Capacité (L)', type: 'text' },
   ],
-
+  
 };
 // Étapes du formulaire
 type FormStep = 1 | 2 | 3 | 4;
@@ -136,19 +131,11 @@ interface FormDataExtended extends Partial<AdminArticle> {
   kitchen_area?: number;
   parking_spaces?: number;
   [key: string]: any;
-  visibility?: 'active' | 'inactive';
 }
 
 export default function ArticlesScreen() {
-  const { isConnected } = useNetwork();
   const isDark = useColorScheme() === 'dark';
   const { articles, addArticle, updateArticle, deleteArticle, loadArticles } = useAdmin();
-    // Rafraîchit automatiquement les articles à la reconnexion réseau
-    useEffect(() => {
-      if (isConnected) {
-        loadArticles();
-      }
-    }, [isConnected]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formStep, setFormStep] = useState<FormStep>(1);
@@ -199,26 +186,7 @@ export default function ArticlesScreen() {
   const [showListingTypeModal, setShowListingTypeModal] = useState(false);
   const [showSortModal, setShowSortModal] = useState(false);
   const [showItemsPerPageModal, setShowItemsPerPageModal] = useState(false);
-  const img = require('../../assets/images/adimn.jpeg');
-  const [showArticlesGrid, setShowArticlesGrid] = useState(false);
-  const [showFabLabel, setShowFabLabel] = useState(true);
-  const fabLabelAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    if (showFabLabel) {
-      Animated.timing(fabLabelAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(fabLabelAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showFabLabel]);
   // Filter articles based on search and filters
   let filteredArticles = articles.filter(article => {
     const matchesSearch = article.title.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -548,11 +516,11 @@ export default function ArticlesScreen() {
           visitPrice: formData.visitPrice || 0,
           location: formData.location!,
           description: formData.description || '',
-
+          
           image: formData.image || (formData.images && formData.images[0]) || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=500',
           images: [],
           videos: [],
-          details: formData.details || {},
+          details : formData.details || {},
         });
 
         if (!newArticle) {
@@ -623,803 +591,427 @@ export default function ArticlesScreen() {
       setUploading(false);
     }
   };
-  const toggleArticleStatus = async (article: AdminArticle) => {
-    try {
-      const newStatus = article.visibility === 'active' ? 'inactive' : 'active';
-      const success = await updateArticle(article.id, { visibility: newStatus });
-      if (!success) {
-        Alert.alert('Erreur', 'Impossible de changer le statut de l\'annonce');
-      }
-    } catch (error) {
-      console.error('[Toggle Status Error]:', error);
-      Alert.alert('Erreur', 'Une erreur est survenue lors du changement de statut');
-    }
-  };
-function TabNavigationArticles({ isDark }) {
-  const [activeTab, setActiveTab] = React.useState('tout');
-  const tabList = [
-    { key: 'tout', label: 'Tout' },
-    { key: 'visible', label: 'Visible' },
-    { key: 'invisible', label: 'Invisible' },
-  ];
-  const indicatorAnim = React.useRef(new Animated.Value(0)).current;
-
-  React.useEffect(() => {
-    Animated.spring(indicatorAnim, {
-      toValue: tabList.findIndex(t => t.key === activeTab),
-      useNativeDriver: true,
-      speed: 18,
-      bounciness: 8,
-    }).start();
-  }, [activeTab]);
 
   return (
-    <View style={{
-      flexDirection: 'row',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginTop: 10,
-      marginBottom: 2,
-      borderRadius: 16,
-      padding: 4,
-      alignSelf: 'center',
-      width: '90%',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
-      {tabList.map((tab, idx) => (
-        <TouchableOpacity
-          key={tab.key}
-          onPress={() => setActiveTab(tab.key)}
-          style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 14 }}
-          activeOpacity={0.8}
-        >
-          <Text style={{
-            color: activeTab === tab.key ? (isDark ? '#06B6D4' : '#0F172A') : (isDark ? '#64748B' : '#64748B'),
-            fontWeight: activeTab === tab.key ? 'bold' : '600',
-            fontSize: 15
-          }}>
-            {tab.label}
+    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0F172A' : '#F8FAFC' }]}>
+      {/* Enhanced Header with Stats */}
+      <View style={[styles.headerContainer, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderBottomColor: isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.1)' }]}>
+        {/* Top Section - Title & Add Button */}
+        <View style={styles.headerTop}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.headerTitle, { color: isDark ? '#F1F5F9' : '#0F172A' }]}>
+              ✨ Mes Annonces
+            </Text>
+            <Text style={[styles.headerSubtitle, { color: isDark ? '#94A3B8' : '#64748B' }]}>
+              Gérez et publiez vos propriétés
+            </Text>
+          </View>
+            <View style={{ flex: 1 }}>
+          <TouchableOpacity style={styles.addBtnEnhanced} onPress={handleAdd}>
+            <LinearGradient
+              colors={['#06B6D4', '#4F46E5']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.addBtnGradient}
+            >
+              <MaterialCommunityIcons name="plus" size={22} color="#FFFFFF" />
+
+            </LinearGradient>
+          </TouchableOpacity>
+          {/* Ajoute un text en dessous du boutton */}
+          <Text style={[styles.addBtnText, { color: isDark ? '#94A3B8' : '#64748B' }]}>
+            Ajouter une annonce
           </Text>
-        </TouchableOpacity>
-      ))}
-      <Animated.View
-        style={{
-          position: 'absolute',
-          bottom: 2,
-          left: `${(100 / tabList.length) * 0}%`,
-          width: `${100 / tabList.length}%`,
-          height: 4,
-          borderRadius: 2,
-          backgroundColor: isDark ? '#06B6D4' : '#06B6D4',
-          transform: [{
-            translateX: indicatorAnim.interpolate({
-              inputRange: [0, 1, 2],
-              outputRange: [0, (100 / tabList.length), (7 * 100) / tabList.length],
-            }),
-          }],
-        }}
-      />
-    </View>
-  );
-}
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0F172A' : '#ffffff' }]}>
-      {/* Ajouter un boutton en absolut pour creer un nouveau produit */}
-      <View style={{ position: 'absolute', bottom: 60, right: 20, alignItems: 'flex-end', zIndex: 10 }}>
-        <Animated.View
-          style={{
-            opacity: fabLabelAnim,
-            transform: [
-              {
-                translateX: fabLabelAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [40, 0], // Slide in from right
-                }),
-              },
-            ],
-            marginBottom: -35,
-            marginRight: 70,
-            // backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
-            paddingHorizontal: 18,
-            paddingVertical: 10,
-            borderRadius: 20,
-            // shadowColor: '#000',
-            shadowOpacity: 0.15,
-            shadowRadius: 8,
-            // elevation: 4,
-          }}
-          pointerEvents="none"
-        >
-          <Text style={{ color: isDark ? '#06B6D4' : '#06B6D4', fontWeight: 'bold', fontSize: 15 }}>
-            Créer une annonce rapide
-          </Text>
-        </Animated.View>
-        <TouchableOpacity
-          style={{
-            backgroundColor: isDark ? '#64748B' : '#06B6D4',
-            borderRadius: 35,
-            paddingHorizontal: 20,
-            paddingVertical: 20,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            elevation: 6,
-          }}
-          activeOpacity={0.8}
-          onPressIn={() => setShowFabLabel(false)}
-          onPressOut={() => setShowFabLabel(true)}
-          onPress={() => setModalVisible(true)}
-        >
-          <MaterialCommunityIcons name="plus" size={28} color="#FFFFFF" />
-        </TouchableOpacity>
+          </View>
+
+        </View>
+
+
       </View>
 
-
-      {!showArticlesGrid ? (
-        <>
-          <View style={{ height: 800 }} >
-
-            <View style={styles.topBar}>
-              {/* Commencer par la bar de recherche */}
-              <View style={[styles.searchContainer, { backgroundColor: isDark ? '#1E293B' : '#e8eff075', borderColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.15)', borderRadius: 28 }]}>
-
-                <DynamicIcon name="magnify" size={28} style={{ marginRight: 8 }} />
-                <TextInput
-
-                  placeholder="Rechercher..."
-                  placeholderTextColor={isDark ? '#94A3B8' : '#94A3B8'}
-                  // ajouter le couleur de texte au placeholder
-                  value={searchText}
-                  onChangeText={setSearchText}
-                  style={[styles.searchInput, { color: isDark ? '#F1F5F9' : '#0F172A' }]}
-                />
-              </View>
-
-              {/* Panel d'acceuil */}
+      {/* Filter Bar - Enhanced */}
+      <View style={[styles.filterBarContainer, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
+        {/* Search Box - Enhanced */}
 
 
-            </View>
+        {/* Filters Row */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScrollRow} contentContainerStyle={styles.filterButtonsContainer}>
+          {/* Category Filter */}
+          <TouchableOpacity
+            style={[
+              styles.filterChip,
+              selectedCategory && { backgroundColor: '#06B6D4' },
+              { borderColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.15)' }
+            ]}
+            onPress={() => setShowCategoryModal(true)}
+          >
+            <MaterialCommunityIcons
+              name="filter-variant"
+              size={16}
+              color={selectedCategory ? '#FFFFFF' : isDark ? '#94A3B8' : '#64748B'}
+            />
+            <Text style={[styles.filterChipText, selectedCategory && { color: '#FFFFFF' }, !selectedCategory && { color: isDark ? '#94A3B8' : '#64748B' }]}>
+              {selectedCategory ? ([...CATEGORIES, ...EXTRA_CATEGORIES].find(c => c.value === selectedCategory)?.label) : 'Catégorie'}
+            </Text>
+          </TouchableOpacity>
 
-            <View style={[styles.headerPanel, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.1)', borderWidth: 1, gap: 5, margin: 20, borderRadius: 22 }]}>
-              <View style={styles.headerIconContainer}>
-                <Text style={[styles.welcomeText]}>
-                  Bienvenue!
-                </Text>
-                <Text style={[styles.welcomeSubtitle, { color: isDark ? '#94A3B8' : '#64748B' }]}>
-                  Gérez vos annonces efficacement
-                </Text>
-              </View>
+          {/* Listing Type Filter */}
+          <TouchableOpacity
+            style={[
+              styles.filterChip,
+              selectedListingType && { backgroundColor: '#06B6D4' },
+              { borderColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.15)' }
+            ]}
+            onPress={() => setShowListingTypeModal(true)}
+          >
+            <MaterialCommunityIcons
+              name="home-group"
+              size={16}
+              color={selectedListingType ? '#FFFFFF' : isDark ? '#94A3B8' : '#64748B'}
+            />
+            <Text style={[styles.filterChipText, selectedListingType && { color: '#FFFFFF' }, !selectedListingType && { color: isDark ? '#94A3B8' : '#64748B' }]}>
+              {selectedListingType ? (selectedListingType === 'sale' ? 'Vente' : 'Location') : 'Type'}
+            </Text>
+          </TouchableOpacity>
 
-              <View style={styles.avatarContainer}>
+          {/* Sort Filter */}
+          <TouchableOpacity
+            style={[
+              styles.filterChip,
+              sortBy !== 'newest' && { backgroundColor: 'rgba(99, 102, 241, 0.1)' },
+              { borderColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.15)' }
+            ]}
+            onPress={() => setShowSortModal(true)}
+          >
+            <MaterialCommunityIcons
+              name="sort"
+              size={16}
+              color={isDark ? '#94A3B8' : '#64748B'}
+            />
+            <Text style={[styles.filterChipText, { color: isDark ? '#94A3B8' : '#64748B' }]}>
+              Tri
+            </Text>
+          </TouchableOpacity>
+
+
+          {/* Voir plus - Extra Categories */}
+          <TouchableOpacity
+            style={[styles.filterChip, { borderColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.15)' }]}
+            onPress={() => setShowCategoryModal(true)}
+          >
+            <MaterialCommunityIcons name="dots-horizontal" size={16} color={isDark ? '#94A3B8' : '#64748B'} />
+            <Text style={[styles.filterChipText, { color: isDark ? '#94A3B8' : '#64748B' }]}>Voir plus</Text>
+          </TouchableOpacity>
+
+          {/* Reset Filters Button */}
+          {(selectedCategory || selectedListingType || searchText) && (
+            <TouchableOpacity
+              style={[
+                styles.filterChip,
                 {
-                  isDark ? (
-                    <View style={[styles.avatarPlaceholder, { backgroundColor: 'transparent' }]}>
-                      <MaterialCommunityIcons name="account" size={48} color="#94A3B8" />
-                    </View>
-                  ) :(
-                    <Image source={img} style={styles.avatar} />
-                  )
+                  backgroundColor: 'rgba(244, 63, 94, 0.1)',
+                  borderColor: 'rgba(244, 63, 94, 0.3)'
                 }
-                
-                {/* <DynamicIcon name="account" size={48} color={isDark ? '#94A3B8' : '#64748B'} /> */}
-              </View>
-            </View>
+              ]}
+              onPress={() => {
+                setSearchText('');
+                setSelectedCategory(null);
+                setSelectedListingType(null);
+                setSortBy('newest');
+                setCurrentPage(1);
+              }}
+            >
+              <MaterialCommunityIcons
+                name="close-circle"
+                size={16}
+                color="#F43F5E"
+              />
+              <Text style={[styles.filterChipText, { color: '#F43F5E' }]}>
+                Réinitialiser
+              </Text>
+            </TouchableOpacity>
+          )}
 
-            <View style={styles.statsContainer}>
+        </ScrollView>
 
-              <View style={[styles.statSection]}>
-
-                <TouchableOpacity
-                  style={[
-                    styles.statButton,
-                    {
-                      flexDirection: 'column',
-                      alignItems: 'flex-start',
-                      backgroundColor: isDark ? '#1E293B' : '#06B6D4',
-                      borderColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.15)',
-                    },
-                  ]}
-                  onPress={() => setModalVisible(true)}
-                >
-                  {/* Ligne du haut : date à gauche, trois points à droite */}
-                  <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={[styles.statIconText, { fontWeight: 'bold', fontSize: 14, color: '#ffffffc4' }]}>
-                      {new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                    </Text>
-                    <MaterialCommunityIcons name="dots-horizontal" size={24} color={isDark ? '#94A3B8' : '#fcfcfc'} />
-                  </View>
-                  {/* Ligne du milieu : icône folder, titre, sous-titre */}
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 14, width: '100%' }}>
-                    <MaterialCommunityIcons name="folder-plus" size={32} color="#fefefe" style={{ marginRight: 10 }} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.statLabel, { color: isDark ? '#06B6D4' : '#ffffff', fontWeight: 'bold', fontSize: 14 }]}>Créer Annonce</Text>
-                      <Text style={[styles.statLabel, { color: isDark ? '#94A3B8' : '#ffffffb8', fontSize: 10 }]}>24 Annonces </Text>
-                    </View>
-                  </View>
-                  {/* Ligne du bas : barre de progression et pourcentage */}
-                  <View style={{ width: '100%', marginTop: 16 }}>
-                    <Text style={[styles.statLabel, { color: isDark ? '#94A3B8' : '#64748B', fontSize: 10 }]}>Progresse </Text>
-
-
-                  </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.statButton,
-                    {
-                      flexDirection: 'column',
-                      alignItems: 'flex-start',
-                      backgroundColor: isDark ? '#1E293B' : 'rgba(99, 102, 241, 0.15)',
-                      borderColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.15)',
-                    },
-                  ]}
-                  onPress={() => router.push('/boutique')}
-                >
-                  {/* Ligne du haut : date à gauche, trois points à droite */}
-                  <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={[styles.statIconText, { fontWeight: 'bold', fontSize: 14 }]}>
-                      {new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                    </Text>
-                    <MaterialCommunityIcons name="dots-horizontal" size={24} color={isDark ? '#94A3B8' : '#64748B'} />
-                  </View>
-                  {/* Ligne du milieu : icône folder, titre, sous-titre */}
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 14, width: '100%' }}>
-                    <MaterialCommunityIcons name="folder-account" size={32} color="#06B6D4" style={{ marginRight: 10 }} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.statLabel, { color: isDark ? '#06B6D4' : '#0F172A', fontWeight: 'bold', fontSize: 14 }]}>E-boutique</Text>
-                      <Text style={[styles.statLabel, { color: isDark ? '#94A3B8' : '#64748B', fontSize: 10 }]}>2 Boutiques </Text>
-                    </View>
-                  </View>
-                  {/* Ligne du bas : barre de progression et pourcentage */}
-                  <View style={{ width: '100%', marginTop: 16 }}>
-                    <Text style={[styles.statLabel, { color: isDark ? '#94A3B8' : '#64748B', fontSize: 10 }]}>Progresse </Text>
-
-                    <View style={{ height: 8, backgroundColor: isDark ? '#334155' : '#E2E8F0', borderRadius: 6, overflow: 'hidden' }}>
-                      <View style={{ width: '40%', height: 8, backgroundColor: '#06B6D4', borderRadius: 6 }} />
-                    </View>
-                    <Text style={{ color: isDark ? '#94A3B8' : '#64748B', fontSize: 14, marginTop: 4, fontWeight: '600' }}>40%</Text>
-                  </View>
-                </TouchableOpacity>
-
-              </View>
-              <View style={[styles.statSection]}>
-
-
-                <TouchableOpacity
-                  style={[
-                    styles.statButton,
-                    {
-                      flexDirection: 'column',
-                      alignItems: 'flex-start',
-                      backgroundColor: isDark ? '#1E293B' : 'rgba(99, 101, 241, 0.09)',
-                      borderColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.15)',
-                    },
-                  ]}
-                  onPress={() => setShowArticlesGrid(true)}
-
-                >
-                  {/* Ligne du haut : date à gauche, trois points à droite */}
-                  <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={[styles.statIconText, { fontWeight: 'bold', fontSize: 14 }]}>
-                      {new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                    </Text>
-                    <MaterialCommunityIcons name="dots-horizontal" size={24} color={isDark ? '#94A3B8' : '#64748B'} />
-                  </View>
-                  {/* Ligne du milieu : icône folder, titre, sous-titre */}
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 14, width: '100%' }}>
-                    <MaterialCommunityIcons name="folder-account" size={32} color="#06B6D4" style={{ marginRight: 10 }} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.statLabel, { color: isDark ? '#06B6D4' : '#0F172A', fontWeight: 'bold', fontSize: 14 }]}>Mes Annonces</Text>
-                      <Text style={[styles.statLabel, { color: isDark ? '#94A3B8' : '#64748B', fontSize: 10 }]}>24 Annonces </Text>
-                    </View>
-                  </View>
-                  {/* Ligne du bas : barre de progression et pourcentage */}
-                  <View style={{ width: '100%', marginTop: 16 }}>
-                    <Text style={[styles.statLabel, { color: isDark ? '#94A3B8' : '#64748B', fontSize: 10 }]}>Progresse </Text>
-
-                    <View style={{ height: 8, backgroundColor: isDark ? '#334155' : '#E2E8F0', borderRadius: 6, overflow: 'hidden' }}>
-                      <View style={{ width: '60%', height: 8, backgroundColor: '#06B6D4', borderRadius: 6 }} />
-                    </View>
-                    <Text style={{ color: isDark ? '#94A3B8' : '#64748B', fontSize: 14, marginTop: 4, fontWeight: '600' }}>60%</Text>
-                  </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.statButton,
-                    {
-                      flexDirection: 'column',
-                      alignItems: 'flex-start',
-                      backgroundColor: isDark ? '#1E293B' : 'rgba(99, 102, 241, 0.15)',
-                      borderColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.15)',
-                    },
-                  ]}
-                  onPress={() => router.push('/reservations')}
-                >
-                  {/* Ligne du haut : date à gauche, trois points à droite */}
-                  <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={[styles.statIconText, { fontWeight: 'bold', fontSize: 14 }]}>
-                      {new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                    </Text>
-                    <MaterialCommunityIcons name="dots-horizontal" size={24} color={isDark ? '#94A3B8' : '#64748B'} />
-                  </View>
-                  {/* Ligne du milieu : icône folder, titre, sous-titre */}
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 14, width: '100%' }}>
-                    <MaterialCommunityIcons name="folder-account" size={32} color="#06B6D4" style={{ marginRight: 10 }} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.statLabel, { color: isDark ? '#06B6D4' : '#0F172A', fontWeight: 'bold', fontSize: 14 }]}>Reservations</Text>
-                      {/* <Text style={[styles.statLabel, { color: isDark ? '#94A3B8' : '#64748B', fontSize: 10 }]}>24 Reservations </Text> */}
-                    </View>
-                  </View>
-                  {/* Ligne du bas : barre de progression et pourcentage */}
-                  <View style={{ width: '100%', marginTop: 16 }}>
-                    <Text style={[styles.statLabel, { color: isDark ? '#94A3B8' : '#64748B', fontSize: 10 }]}>Progresse </Text>
-
-                    <View style={{ height: 8, backgroundColor: isDark ? '#334155' : '#E2E8F0', borderRadius: 6, overflow: 'hidden' }}>
-                      <View style={{ width: '60%', height: 8, backgroundColor: '#06B6D4', borderRadius: 6 }} />
-                    </View>
-                    <Text style={{ color: isDark ? '#94A3B8' : '#64748B', fontSize: 14, marginTop: 4, fontWeight: '600' }}>60% de l'objectif</Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-
-            </View>
-            {/* Ajouter un footer */}
-            <View style={{ position:'absolute' ,bottom : 30, left : 0, padding: 16, backgroundColor: isDark ? '#1E293B' : '#F1F5F9', borderColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.15)', borderWidth: 0, width : '100%' }}>
-              <Text style={{ color: isDark ? '#94A3B8' : '#64748B', textAlign: 'center', fontSize: 14 }}>
-                © {new Date().getFullYear()} Mon Application. Tous droits réservés.
+        {/* Active Filters Row */}
+        {(selectedCategory || selectedListingType || searchText) && (
+          <View style={styles.activeFiltersSection}>
+            <View style={styles.activeFiltersHeader}>
+              <MaterialCommunityIcons name="filter-check" size={16} color="#06B6D4" />
+              <Text style={[styles.activeFiltersLabel, { color: isDark ? '#94A3B8' : '#64748B' }]}>
+                Filtres actifs
               </Text>
             </View>
-
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.activeFiltersList} contentContainerStyle={styles.activeFiltersContent}>
+              {searchText && (
+                <View style={[styles.activeFilterBadge, { backgroundColor: 'rgba(99, 102, 241, 0.15)', borderColor: 'rgba(99, 102, 241, 0.3)' }]}>
+                  <MaterialCommunityIcons name="magnify" size={13} color="#06B6D4" />
+                  <Text style={[styles.activeFilterText, { color: '#06B6D4' }]}>
+                    "{searchText}"
+                  </Text>
+                  <TouchableOpacity onPress={() => setSearchText('')}>
+                    <MaterialCommunityIcons name="close" size={13} color="#06B6D4" />
+                  </TouchableOpacity>
+                </View>
+              )}
+              {selectedCategory && (
+                <View style={[styles.activeFilterBadge, { backgroundColor: 'rgba(99, 102, 241, 0.15)', borderColor: 'rgba(99, 102, 241, 0.3)' }]}>
+                  <MaterialCommunityIcons name="filter-variant" size={13} color="#06B6D4" />
+                  <Text style={[styles.activeFilterText, { color: '#06B6D4' }]}>
+                    {CATEGORIES.find(c => c.value === selectedCategory)?.label}
+                  </Text>
+                  <TouchableOpacity onPress={() => setSelectedCategory(null)}>
+                    <MaterialCommunityIcons name="close" size={13} color="#06B6D4" />
+                  </TouchableOpacity>
+                </View>
+              )}
+              {selectedListingType && (
+                <View style={[styles.activeFilterBadge, { backgroundColor: 'rgba(99, 102, 241, 0.15)', borderColor: 'rgba(99, 102, 241, 0.3)' }]}>
+                  <MaterialCommunityIcons name="home-search" size={13} color="#06B6D4" />
+                  <Text style={[styles.activeFilterText, { color: '#06B6D4' }]}>
+                    {selectedListingType === 'sale' ? 'Vente' : 'Location'}
+                  </Text>
+                  <TouchableOpacity onPress={() => setSelectedListingType(null)}>
+                    <MaterialCommunityIcons name="close" size={13} color="#06B6D4" />
+                  </TouchableOpacity>
+                </View>
+              )}
+              {(selectedCategory || selectedListingType || searchText) && (
+                <TouchableOpacity
+                  style={[styles.activeFilterBadge, { backgroundColor: 'rgba(244, 63, 94, 0.15)', borderColor: 'rgba(244, 63, 94, 0.3)' }]}
+                  onPress={() => {
+                    setSearchText('');
+                    setSelectedCategory(null);
+                    setSelectedListingType(null);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <MaterialCommunityIcons name="refresh" size={13} color="#F43F5E" />
+                  <Text style={[styles.activeFilterText, { color: '#F43F5E' }]}>
+                    Réinitialiser
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
           </View>
-        </>
-      ) : (
-        <>
-          {showArticlesGrid && (
-  <View style={{ paddingHorizontal: 0, marginTop: 8, marginBottom: 8 }}>
-    {/* Header avec retour et titre centré */}
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', position: 'relative', minHeight: 36, marginHorizontal: 15 }}>
-      <TouchableOpacity
-        onPress={() => setShowArticlesGrid(false)}
-        style={{
-          position: 'absolute',
-          left: 0,
-          zIndex: 2,
-          marginLeft: 8,
-          padding: 8,
-          borderRadius: 8,
-          backgroundColor: isDark ? '#232b3b' : '#E2E8F0'
-        }}
-      >
-        <MaterialCommunityIcons name="arrow-left" size={24} color={isDark ? '#94A3B8' : '#06B6D4'} />
-      </TouchableOpacity>
-      <Text style={{
-        color: isDark ? '#06B6D4' : '#0F172A',
-        fontWeight: 'bold',
-        fontSize: 20,
-        textAlign: 'center',
-        flex: 1
-      }}>
-        Listes Annonces
-      </Text>
-      <View style={{ width: 40 }} />
-    </View>
+        )}
+      </View>
 
-    {/* Tab Navigation */}
-    <TabNavigationArticles isDark={isDark} />
-  </View>
-)}
-
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.content, { paddingBottom: 80 }]}>
-
-            {filteredArticles.length === 0 ? (
-              <View style={styles.emptyState}>
-                <MaterialCommunityIcons name="home-outline" size={60} color={isDark ? '#94A3B8' : '#CBD5E1'} />
-                <Text style={[styles.emptyText, { color: isDark ? '#94A3B8' : '#64748B', marginTop: 16 }]}>
-                  {searchText || selectedCategory || selectedListingType ? 'Aucun résultat trouvé' : 'Aucune annonce pour le moment'}
-                </Text>
-              </View>
-            ) : (
-              <React.Fragment>
-                <View style={[styles.articlesGrid, { flexDirection: 'row', flexWrap: 'wrap' }]}>
-                  {paginatedArticles.map((article, index) => {
-                    const categoryLabel = CATEGORIES.find(c => c.value === article.type)?.label || article.type;
-                    const isRealEstate = ['house', 'apartment'].includes(article.type || '');
-                    const cardWidth = gridColumns === 1 ? '100%' : 'calc(50% - 6px)';
-                    return (
-                      // <View key={article.id} style={{ width: gridColumns === 1 ? '100%' : '50%', paddingRight: gridColumns === 1 ? 0 : index % 2 === 0 ? 14 : 0, marginBottom: 14 }}>
-                      //   <View style={[styles.articleCard, { backgroundColor: isDark ? '#1A2332' : '#FFFFFF', borderColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.15)', shadowColor: isDark ? '#000000' : '#06B6D4', shadowOpacity: isDark ? 0.5 : 0.2, shadowRadius: 16, elevation: isDark ? 14 : 10 }]}>
-                      //     {/* Image Section with Premium Overlay */}
-                      //     <TouchableOpacity
-                      //       style={styles.imageContainer}
-                      //       onPress={() => handleOpenLightbox(article)}
-                      //       activeOpacity={0.85}
-                      //     >
-                      //       <Image source={{ uri: article.image }} style={styles.mainImage} />
-                      //       <View style={styles.imageOverlay} />
-                      //       <View style={[styles.typeBadgeCard, { backgroundColor: 'rgba(99, 102, 241, 0.95)' }]}>
-                      //         <MaterialCommunityIcons name="star" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
-                      //         <Text style={styles.typeBadgeText}>{categoryLabel}</Text>
-                      //       </View>
-                      //       {(article.images && article.images.length > 0) || (article.videos && article.videos.length > 0) ? (
-                      //         <View style={[styles.mediaCountBadge, { backgroundColor: 'rgba(0, 0, 0, 0.7)' }]}>
-                      //           <MaterialCommunityIcons name="image-multiple" size={14} color="#FFFFFF" />
-                      //           <Text style={styles.mediaCountText}>
-                      //             {(article.images?.length || 0) + (article.videos?.length || 0)}
-                      //           </Text>
-                      //         </View>
-                      //       ) : null}
-                      //       <View style={[styles.listingBadge, { backgroundColor: article.listingType === 'sale' ? 'rgba(16, 185, 149, 0.95)' : 'rgba(245, 158, 11, 0.95)', paddingHorizontal: 10, paddingVertical: 6 }]}>
-                      //         <MaterialCommunityIcons name={article.listingType === 'sale' ? 'home-heart' : 'home-city'} size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
-                      //         <Text style={styles.listingBadgeText}>
-                      //           {article.listingType === 'sale' ? 'Vente' : 'Location'}
-                      //         </Text>
-                      //       </View>
-                      //     </TouchableOpacity>
-                      //     <View style={[styles.articleContent, { paddingBottom: 10, paddingHorizontal: 14 }]}>
-                      //       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                      //         <Text style={[styles.articleTitle, { color: isDark ? '#F1F5F9' : '#0F172A', flex: 1 }]} numberOfLines={2}>
-                      //           {article.title}
-                      //         </Text>
-                      //         <View style={{ backgroundColor: isDark ? 'rgba(99, 102, 241, 0.1)' : 'rgba(99, 102, 241, 0.05)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, marginLeft: 8 }}>
-                      //           <Text style={[{ color: isDark ? '#06B6D4' : '#4F46E5', fontSize: 13, fontWeight: '800' }]}>
-                      //             ${article.price.toLocaleString()}
-                      //           </Text>
-                      //         </View>
-                      //       </View>
-                      //       <View style={styles.locationRow}>
-                      //         <MaterialCommunityIcons name="map-marker" size={13} color={isDark ? '#06B6D4' : '#0E7490'} />
-                      //         <Text style={[styles.articleLocation, { color: isDark ? '#94A3B8' : '#64748B', flex: 1, marginLeft: 4 }]} numberOfLines={1}>
-                      //           {article.location}
-                      //         </Text>
-                      //       </View>
-                      //       {article.description && (
-                      //         <Text style={[styles.descriptionSnippet, { color: isDark ? '#94A3B8' : '#64748B', marginTop: 6 }]} numberOfLines={2}>
-                      //           {article.description}
-                      //         </Text>
-                      //       )}
-
-                      //       {article.type && CategoryAttributes[article.type as keyof typeof CategoryAttributes] && (
-                      //         <View style={{ marginTop: 14, paddingTop: 8, borderTopWidth: 1, borderTopColor: isDark ? '#334155' : '#E2E8F0' }}>
-                      //           {CategoryAttributes[article.type as keyof typeof CategoryAttributes].map((attr: string) => {
-                      //             const value = (article as any)[attr];
-                      //             return value ? (
-                      //               <View key={attr} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                      //                 <MaterialCommunityIcons
-                      //                   name="information-outline"
-                      //                   size={14}
-                      //                   color="#06B6D4"
-                      //                   style={{ marginRight: 8 }}
-                      //                 />
-                      //                 <Text style={{
-                      //                   color: isDark ? '#f5f9ff' : '#64748B',
-                      //                   fontSize: 13,
-                      //                   fontWeight: '600'
-                      //                 }}>
-                      //                   {attr.charAt(0).toUpperCase() + attr.slice(1)}:
-                      //                 </Text>
-                      //                 <Text style={{
-                      //                   color: isDark ? '#F1F5F9' : '#0F172A',
-                      //                   fontSize: 13,
-                      //                   marginLeft: 6,
-                      //                   flex: 1
-                      //                 }}>
-                      //                   {String(value)}
-                      //                 </Text>
-                      //               </View>
-                      //             ) : null;
-                      //           })}
-                      //         </View>
-                      //       )}
-                      //       {isRealEstate && (
-                      //         <View style={styles.realEstateDetailsSection}>
-                      //           <View style={[styles.detailsSpecRow, { gap: 8 }]}>
-                      //             <View style={styles.specBadgeMinimal}>
-                      //               <MaterialCommunityIcons name="bed" size={18} color="#10B981" />
-                      //               <Text style={[styles.specValueMinimal, { color: isDark ? '#10B981' : '#059669' }]}> {article.beds ?? 0} </Text>
-                      //             </View>
-                      //             <View style={styles.specBadgeMinimal}>
-                      //               <MaterialCommunityIcons name="shower" size={18} color="#06B6D4" />
-                      //               <Text style={[styles.specValueMinimal, { color: isDark ? '#06B6D4' : '#0891B2' }]}> {article.baths ?? 0} </Text>
-                      //             </View>
-                      //             <View style={styles.specBadgeMinimal}>
-                      //               <MaterialCommunityIcons name="floor-plan" size={18} color="#F59E0B" />
-                      //               <Text style={[styles.specValueMinimal, { color: isDark ? '#F59E0B' : '#D97706' }]}> {article.area ?? 0} </Text>
-                      //             </View>
-                      //             <View style={styles.specBadgeMinimal}>
-                      //               <MaterialCommunityIcons name="car" size={18} color="#EF4444" />
-                      //               <Text style={[styles.specValueMinimal, { color: isDark ? '#EF4444' : '#DC2626' }]}> {article.parking_spaces ?? 0} </Text>
-                      //             </View>
-                      //           </View>
-                      //           {(article.living_area || article.kitchen_area) && (
-                      //             <View style={[styles.additionalAreasSection, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.05)' : 'rgba(99, 102, 241, 0.02)', borderRadius: 10 }]}>
-                      //               {article.living_area ? (
-                      //                 <View style={styles.areaDetailRow}>
-                      //                   <View style={[styles.areaDetailIcon, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.1)' }]}>
-                      //                     <MaterialCommunityIcons name="sofa" size={16} color="#06B6D4" />
-                      //                   </View>
-                      //                   <View style={styles.areaDetailContent}>
-                      //                     <Text style={[styles.areaDetailLabel, { color: isDark ? '#94A3B8' : '#64748B' }]}> Salon/Séjour </Text>
-                      //                     <Text style={[styles.areaDetailValue, { color: isDark ? '#F1F5F9' : '#0F172A' }]}> {article.living_area} m² </Text>
-                      //                   </View>
-                      //                 </View>
-                      //               ) : null}
-                      //               {article.kitchen_area ? (
-                      //                 <View style={styles.areaDetailRow}>
-                      //                   <View style={[styles.areaDetailIcon, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.1)' }]}>
-                      //                     <MaterialCommunityIcons name="chef-hat" size={16} color="#06B6D4" />
-                      //                   </View>
-                      //                   <View style={styles.areaDetailContent}>
-                      //                     <Text style={[styles.areaDetailLabel, { color: isDark ? '#94A3B8' : '#64748B' }]}> Cuisine </Text>
-                      //                     <Text style={[styles.areaDetailValue, { color: isDark ? '#F1F5F9' : '#0F172A' }]}> {article.kitchen_area} m² </Text>
-                      //                   </View>
-                      //                 </View>
-                      //               ) : null}
-                      //             </View>
-                      //           )}
-                      //         </View>
-                      //       )}
-                      //     </View>
-                      //     <View style={styles.articleActions}>
-                      //       <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => handleEdit(article)}>
-                      //         <MaterialCommunityIcons name="pencil" size={18} color="#FFFFFF" />
-                      //         <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>Modifier</Text>
-                      //       </TouchableOpacity>
-                      //       <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDelete(article.id)}>
-                      //         <MaterialCommunityIcons name="delete" size={18} color="#FFFFFF" />
-                      //         <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>Supprimer</Text>
-                      //       </TouchableOpacity>
-                      //     </View>
-                      //   </View>
-                      // </View>
-                      <View
-                        key={article.id}
-                        style={{
-                          width: gridColumns === 1 ? '100%' : '50%',
-                          paddingRight: gridColumns === 1 ? 0 : index % 2 === 0 ? 14 : 0,
-                          marginBottom: 14,
-                          maxHeight: 250,
-                        }}
+      {/* Articles Grid */}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.content, { paddingBottom: 80 }]}>
+        {filteredArticles.length === 0 ? (
+          <View style={styles.emptyState}>
+            <MaterialCommunityIcons name="home-outline" size={60} color={isDark ? '#94A3B8' : '#CBD5E1'} />
+            <Text style={[styles.emptyText, { color: isDark ? '#94A3B8' : '#64748B', marginTop: 16 }]}>
+              {searchText || selectedCategory || selectedListingType ? 'Aucun résultat trouvé' : 'Aucune annonce pour le moment'}
+            </Text>
+          </View>
+        ) : (
+          <React.Fragment>
+            <View style={[styles.articlesGrid, { flexDirection: 'row', flexWrap: 'wrap' }]}>
+              {paginatedArticles.map((article, index) => {
+                const categoryLabel = CATEGORIES.find(c => c.value === article.type)?.label || article.type;
+                const isRealEstate = ['house', 'apartment'].includes(article.type || '');
+                const cardWidth = gridColumns === 1 ? '100%' : 'calc(50% - 6px)';
+                return (
+                  <View key={article.id} style={{ width: gridColumns === 1 ? '100%' : '50%', paddingRight: gridColumns === 1 ? 0 : index % 2 === 0 ? 12 : 0, marginBottom: 12 }}>
+                    <View style={[styles.articleCard, { backgroundColor: isDark ? '#1A2332' : '#FFFFFF', borderColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.15)', shadowColor: isDark ? '#000000' : '#06B6D4', shadowOpacity: isDark ? 0.5 : 0.2, shadowRadius: 16, elevation: isDark ? 12 : 10 }]}>
+                      {/* Image Section with Premium Overlay */}
+                      <TouchableOpacity
+                        style={styles.imageContainer}
+                        onPress={() => handleOpenLightbox(article)}
+                        activeOpacity={0.85}
                       >
-                        <View
-                          style={[
-                            styles.articleCard,
-                            {
-                              backgroundColor: isDark ? '#1A2332' : '#FFFFFF',
-                              borderRadius: 16,
-                              minHeight: 215,
-                              justifyContent: 'space-between',
-                            },
-                          ]}
-                        >
-                          {/* Ligne du haut : date + switch visibilité */}
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomColor : '#bfc3c95e', borderBottomWidth: 0.5, paddingBottom: 6, paddingHorizontal: 14, marginTop: 14 }}>
-                            <Text style={{ color: isDark ? '#94A3B8' : '#64748B', fontSize: 14 }}>
-                              {new Date(article.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                        <Image source={{ uri: article.image }} style={styles.mainImage} />
+                        <View style={styles.imageOverlay} />
+                        <View style={[styles.typeBadgeCard, { backgroundColor: 'rgba(99, 102, 241, 0.95)' }]}>
+                          <MaterialCommunityIcons name="star" size={12} color="#FFFFFF" style={{ marginRight: 4 }} />
+                          <Text style={styles.typeBadgeText}>{categoryLabel}</Text>
+                        </View>
+                        {(article.images && article.images.length > 0) || (article.videos && article.videos.length > 0) ? (
+                          <View style={[styles.mediaCountBadge, { backgroundColor: 'rgba(0, 0, 0, 0.7)' }]}>
+                            <MaterialCommunityIcons name="image-multiple" size={12} color="#FFFFFF" />
+                            <Text style={styles.mediaCountText}>
+                              {(article.images?.length || 0) + (article.videos?.length || 0)}
                             </Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
-                              <Text style={{ color: isDark ? '#94A3B8' : '#64748B', fontSize: 14, marginRight: 6 }}>
-                               Rendre {article.visibility === 'active' ? 'Visible' : 'Inactif'}
-                              </Text>
-
-                              <Switch
-                                value={article.visibility === 'active'}
-                                onValueChange={() => toggleArticleStatus(article.id)}
-                                thumbColor={article.visibility === 'active' ? 'white' : '#06B6D4'}
-                                trackColor={{ false: '#d1d5db', true: '#06B6D4' }}
-                              />
-                            </View>
                           </View>
-
-                          {/* Image + infos */}
-                          <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 6, flex: 1, paddingHorizontal: 14 }}>
-                            <TouchableOpacity
-                              onPress={() => handleOpenLightbox(article)}
-                              style={{
-                                width: 100,
-                                height: 100,
-                                borderRadius: 14,
-                                backgroundColor: isDark ? '#232b3b' : '#F1F5F9',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                marginRight: 14,
-                              }}
-                              activeOpacity={0.85}
-                            >
-                              {article.image ? (
-                                <Image
-                                  source={{ uri: article.image }}
-                                  style={{ width: 100, height: 100, borderRadius: 14 }}
-                                  resizeMode="cover"
-                                />
-                              ) : article.videos ? (
-                                <MaterialCommunityIcons name="video" size={36} color="#06B6D4" />
-                              ) : (
-                                <MaterialCommunityIcons name="image-off" size={36} color="#94A3B8" />
-                              )}
-                            </TouchableOpacity>
-                            <View style={{ flex: 1, justifyContent: 'flex-start'}}>
-                              <Text
-                                style={{
-                                  color: isDark ? '#F1F5F9' : '#0F172A',
-                                  fontWeight: 'bold',
-                                  fontSize: 14,
-                                }}
-                                numberOfLines={1}
-                              >
-                                {article.title}
-                              </Text>
-                              <Text
-                                style={{
-                                  color: isDark ? '#F1F5F9' : '#0f172abc',
-                  
-                                  fontSize: 14,
-                                }}
-                                numberOfLines={1}
-                              >
-                                {article.description}
-                              </Text>
-                              {/* Adresse */}
-                              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-                                <MaterialCommunityIcons name="map-marker" size={14} color="#06B6D4" style={{ marginRight: 4 }} />
-                                <Text style={{ color: isDark ? '#94A3B8' : '#64748B', fontSize: 14 }} numberOfLines={1}>
-                                  {article.location}
-                                </Text>
-                              </View>
-                              {/* Adresse complémentaire */}
-                              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2, flexWrap: 'wrap' }}>
-                                {article?.details && typeof article.details === 'object' && Object.keys(article.details).length > 0 ? (
-                                  Object.entries(article.details).map(([key, value]: [string, any], idx: number) => {
-                                    let iconName = 'information-outline';
-                                    let iconColor = '#4F46E5';
-                                    switch (key.toLowerCase()) {
-                                      case 'couleur':
-                                        iconName = 'palette';
-                                        iconColor = '#06B6D4';
-                                        break;
-                                      case 'taille':
-                                        iconName = 'ruler';
-                                        iconColor = '#F59E0B';
-                                        break;
-                                      case 'marque':
-                                        iconName = 'tag';
-                                        iconColor = '#10B981';
-                                        break;
-                                      default:
-                                        iconName = 'information-outline';
-                                        iconColor = '#4F46E5';
-                                    }
-                                    return (
-                                      <View key={key + value + idx} style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10, marginBottom: 2 }}>
-                                        <MaterialCommunityIcons name={iconName} size={14} color={iconColor} style={{ marginRight: 2 }} />
-                                        <Text style={{ color: isDark ? '#94A3B8' : '#64748B', fontSize: 14 }}>
-                                          {key.charAt(0).toUpperCase() + key.slice(1)}: {String(value)}
-                                        </Text>
-                                      </View>
-                                    );
-                                  })
-                                ) : (
-                                  <Text style={{ color: isDark ? '#94A3B8' : '#64748B', fontSize: 14, fontStyle: 'italic' }}>
-                                    Aucun détail
-                                  </Text>
-                                )}
-                              </View>
-                              {/* Autres détails */}
-                              {article.type && CategoryAttributes[article.type as keyof typeof CategoryAttributes] && (
-                                <View style={{ marginTop: 2 }}>
-                                  {CategoryAttributes[article.type as keyof typeof CategoryAttributes].map((attr: string) => {
-                                    const value = (article as any)[attr];
-                                    return value ? (
-                                      <View key={attr} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 1 }}>
-                                        <MaterialCommunityIcons name="information-outline" size={13} color="#06B6D4" style={{ marginRight: 4 }} />
-                                        <Text style={{ color: isDark ? '#f5f9ff' : '#64748B', fontSize: 14, fontWeight: '600' }}>
-                                          {attr.charAt(0).toUpperCase() + attr.slice(1)}:
-                                        </Text>
-                                        <Text style={{ color: isDark ? '#F1F5F9' : '#0F172A', fontSize: 14, marginLeft: 4 }}>
-                                          {String(value)}
-                                        </Text>
-                                      </View>
-                                    ) : null;
-                                  })}
-                                </View>
-                              )}
-                            </View>
-                          </View>
-
-                          {/* Ligne du bas : boutons Edit/Delete */}
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 7, paddingHorizontal: 14 }}>
-                            <TouchableOpacity
-                              style={{
-                                flex: 1,
-                                backgroundColor: '#e7ebeeac',
-                                borderRadius: 8,
-                                paddingVertical: 8,
-                                marginRight: 6,
-                                alignItems: 'center',
-                              }}
-                              onPress={() => handleEdit(article)}
-                            >
-                              {/* <MaterialCommunityIcons name="pencil" size={16} color="#06B6D4" /> */}
-                              <Text style={{ color: '#06B6D4', fontSize: 14, fontWeight: '600', marginTop: 2 }}>
-                                Modifier
-                              </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={{
-                                flex: 1,
-                                backgroundColor: '#06B6D4',
-                                borderRadius: 8,
-                                paddingVertical: 8,
-                                marginLeft: 6,
-                                alignItems: 'center',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                justifyContent: 'space-between',
-                                alignContent: 'center',
-                              }}
-                              onPress={() => handleDelete(article.id)}
-                            >
-                              {/* <MaterialCommunityIcons name="delete" size={16} color="#fff" /> */}
-                              {/* Ajouter du text */}
-                              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600', marginTop: 2 }}>
-                                Supprimer
-                              </Text>
-                            </TouchableOpacity>
+                        ) : null}
+                        <View style={[styles.listingBadge, { backgroundColor: article.listingType === 'sale' ? 'rgba(16, 185, 129, 0.95)' : 'rgba(245, 158, 11, 0.95)', paddingHorizontal: 10, paddingVertical: 6 }]}>
+                          <MaterialCommunityIcons name={article.listingType === 'sale' ? 'home-heart' : 'home-city'} size={12} color="#FFFFFF" style={{ marginRight: 4 }} />
+                          <Text style={styles.listingBadgeText}>
+                            {article.listingType === 'sale' ? 'Vente' : 'Location'}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                      <View style={[styles.articleContent, { paddingBottom: 10, paddingHorizontal: 14 }]}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                          <Text style={[styles.articleTitle, { color: isDark ? '#F1F5F9' : '#0F172A', flex: 1 }]} numberOfLines={2}>
+                            {article.title}
+                          </Text>
+                          <View style={{ backgroundColor: isDark ? 'rgba(99, 102, 241, 0.1)' : 'rgba(99, 102, 241, 0.05)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, marginLeft: 8 }}>
+                            <Text style={[{ color: isDark ? '#06B6D4' : '#4F46E5', fontSize: 13, fontWeight: '800' }]}>
+                              ${article.price.toLocaleString()}
+                            </Text>
                           </View>
                         </View>
+                        <View style={styles.locationRow}>
+                          <MaterialCommunityIcons name="map-marker" size={13} color={isDark ? '#06B6D4' : '#0E7490'} />
+                          <Text style={[styles.articleLocation, { color: isDark ? '#94A3B8' : '#64748B', flex: 1, marginLeft: 4 }]} numberOfLines={1}>
+                            {article.location}
+                          </Text>
+                        </View>
+                        {article.description && (
+                          <Text style={[styles.descriptionSnippet, { color: isDark ? '#94A3B8' : '#64748B', marginTop: 6 }]} numberOfLines={2}>
+                            {article.description}
+                          </Text>
+                        )}
+                        
+                        {article.type && CategoryAttributes[article.type as keyof typeof CategoryAttributes] && (
+                          <View style={{ marginTop: 12, paddingTop: 8, borderTopWidth: 1, borderTopColor: isDark ? '#334155' : '#E2E8F0' }}>
+                            {CategoryAttributes[article.type as keyof typeof CategoryAttributes].map((attr: string) => {
+                              const value = (article as any)[attr];
+                              return value ? (
+                                <View key={attr} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                                  <MaterialCommunityIcons
+                                    name="information-outline"
+                                    size={14}
+                                    color="#06B6D4"
+                                    style={{ marginRight: 8 }}
+                                  />
+                                  <Text style={{
+                                    color: isDark ? '#f5f9ff' : '#64748B',
+                                    fontSize: 13,
+                                    fontWeight: '600'
+                                  }}>
+                                    {attr.charAt(0).toUpperCase() + attr.slice(1)}:
+                                  </Text>
+                                  <Text style={{
+                                    color: isDark ? '#F1F5F9' : '#0F172A',
+                                    fontSize: 13,
+                                    marginLeft: 6,
+                                    flex: 1
+                                  }}>
+                                    {String(value)}
+                                  </Text>
+                                </View>
+                              ) : null;
+                            })}
+                          </View>
+                        )}
+                        {isRealEstate && (
+                          <View style={styles.realEstateDetailsSection}>
+                            <View style={[styles.detailsSpecRow, { gap: 8 }]}>
+                              <View style={styles.specBadgeMinimal}>
+                                <MaterialCommunityIcons name="bed" size={18} color="#10B981" />
+                                <Text style={[styles.specValueMinimal, { color: isDark ? '#10B981' : '#059669' }]}> {article.beds ?? 0} </Text>
+                              </View>
+                              <View style={styles.specBadgeMinimal}>
+                                <MaterialCommunityIcons name="shower" size={18} color="#06B6D4" />
+                                <Text style={[styles.specValueMinimal, { color: isDark ? '#06B6D4' : '#0891B2' }]}> {article.baths ?? 0} </Text>
+                              </View>
+                              <View style={styles.specBadgeMinimal}>
+                                <MaterialCommunityIcons name="floor-plan" size={18} color="#F59E0B" />
+                                <Text style={[styles.specValueMinimal, { color: isDark ? '#F59E0B' : '#D97706' }]}> {article.area ?? 0} </Text>
+                              </View>
+                              <View style={styles.specBadgeMinimal}>
+                                <MaterialCommunityIcons name="car" size={18} color="#EF4444" />
+                                <Text style={[styles.specValueMinimal, { color: isDark ? '#EF4444' : '#DC2626' }]}> {article.parking_spaces ?? 0} </Text>
+                              </View>
+                            </View>
+                            {(article.living_area || article.kitchen_area) && (
+                              <View style={[styles.additionalAreasSection, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.05)' : 'rgba(99, 102, 241, 0.02)', borderRadius: 10 }]}>
+                                {article.living_area ? (
+                                  <View style={styles.areaDetailRow}>
+                                    <View style={[styles.areaDetailIcon, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.1)' }]}>
+                                      <MaterialCommunityIcons name="sofa" size={16} color="#06B6D4" />
+                                    </View>
+                                    <View style={styles.areaDetailContent}>
+                                      <Text style={[styles.areaDetailLabel, { color: isDark ? '#94A3B8' : '#64748B' }]}> Salon/Séjour </Text>
+                                      <Text style={[styles.areaDetailValue, { color: isDark ? '#F1F5F9' : '#0F172A' }]}> {article.living_area} m² </Text>
+                                    </View>
+                                  </View>
+                                ) : null}
+                                {article.kitchen_area ? (
+                                  <View style={styles.areaDetailRow}>
+                                    <View style={[styles.areaDetailIcon, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.1)' }]}>
+                                      <MaterialCommunityIcons name="chef-hat" size={16} color="#06B6D4" />
+                                    </View>
+                                    <View style={styles.areaDetailContent}>
+                                      <Text style={[styles.areaDetailLabel, { color: isDark ? '#94A3B8' : '#64748B' }]}> Cuisine </Text>
+                                      <Text style={[styles.areaDetailValue, { color: isDark ? '#F1F5F9' : '#0F172A' }]}> {article.kitchen_area} m² </Text>
+                                    </View>
+                                  </View>
+                                ) : null}
+                              </View>
+                            )}
+                          </View>
+                        )}
                       </View>
-                    );
-                  })}
-                </View>
-                {totalPages > 1 && (
-                  <View style={[styles.paginationContainer, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.08)' : 'rgba(99, 102, 241, 0.04)', borderTopColor: isDark ? 'rgba(99, 102, 241, 0.1)' : 'rgba(99, 102, 241, 0.05)' }]}>
-                    <View style={styles.paginationInfo}>
-                      <View style={styles.paginationInfoLeft}>
-                        <Text style={[styles.paginationText, { color: isDark ? '#94A3B8' : '#64748B' }]}>
-                          Affichage {startIndex + 1} - {Math.min(startIndex + itemsPerPage, filteredArticles.length)} sur {filteredArticles.length}
-                        </Text>
+                      <View style={styles.articleActions}>
+                        <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => handleEdit(article)}>
+                          <MaterialCommunityIcons name="pencil" size={18} color="#FFFFFF" />
+                          <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>Modifier</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDelete(article.id)}>
+                          <MaterialCommunityIcons name="delete" size={18} color="#FFFFFF" />
+                          <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>Supprimer</Text>
+                        </TouchableOpacity>
                       </View>
-                      <TouchableOpacity style={[styles.itemsPerPageBtn, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)', borderColor: isDark ? 'rgba(99, 102, 241, 0.3)' : 'rgba(99, 102, 241, 0.15)' }]} onPress={() => setShowItemsPerPageModal(true)}>
-                        <Text style={[styles.itemsPerPageText, { color: isDark ? '#06B6D4' : '#4F46E5' }]}>
-                          {itemsPerPage}/page
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                    <View style={styles.paginationNavigation}>
-                      <TouchableOpacity style={[styles.paginationBtn, currentPage === 1 && styles.paginationBtnDisabled]} onPress={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>
-                        <MaterialCommunityIcons name="chevron-left" size={20} color={currentPage === 1 ? (isDark ? '#475569' : '#CBD5E1') : '#06B6D4'} />
-                      </TouchableOpacity>
-                      <View style={styles.paginationPages}>
-                        {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
-                          let pageNum: number;
-                          if (totalPages <= 7) {
-                            pageNum = i + 1;
-                          } else if (currentPage <= 4) {
-                            pageNum = i + 1;
-                          } else if (currentPage >= totalPages - 3) {
-                            pageNum = totalPages - 6 + i;
-                          } else {
-                            pageNum = currentPage - 3 + i;
-                          }
-                          return (
-                            <TouchableOpacity key={pageNum} style={[styles.pageBtn, currentPage === pageNum && { backgroundColor: '#06B6D4', borderColor: '#06B6D4' }]} onPress={() => setCurrentPage(pageNum)}>
-                              <Text style={[styles.pageBtnText, currentPage === pageNum && { color: '#FFFFFF', fontWeight: '800' }]}>
-                                {pageNum}
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                      <TouchableOpacity style={[styles.paginationBtn, currentPage === totalPages && styles.paginationBtnDisabled]} onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}>
-                        <MaterialCommunityIcons name="chevron-right" size={20} color={currentPage === totalPages ? (isDark ? '#475569' : '#CBD5E1') : '#06B6D4'} />
-                      </TouchableOpacity>
                     </View>
                   </View>
-                )}
-              </React.Fragment>
+                );
+              })}
+            </View>
+            {totalPages > 1 && (
+              <View style={[styles.paginationContainer, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.08)' : 'rgba(99, 102, 241, 0.04)', borderTopColor: isDark ? 'rgba(99, 102, 241, 0.1)' : 'rgba(99, 102, 241, 0.05)' }]}>
+                <View style={styles.paginationInfo}>
+                  <View style={styles.paginationInfoLeft}>
+                    <Text style={[styles.paginationText, { color: isDark ? '#94A3B8' : '#64748B' }]}>
+                      Affichage {startIndex + 1} - {Math.min(startIndex + itemsPerPage, filteredArticles.length)} sur {filteredArticles.length}
+                    </Text>
+                  </View>
+                  <TouchableOpacity style={[styles.itemsPerPageBtn, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)', borderColor: isDark ? 'rgba(99, 102, 241, 0.3)' : 'rgba(99, 102, 241, 0.15)' }]} onPress={() => setShowItemsPerPageModal(true)}>
+                    <Text style={[styles.itemsPerPageText, { color: isDark ? '#06B6D4' : '#4F46E5' }]}>
+                      {itemsPerPage}/page
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.paginationNavigation}>
+                  <TouchableOpacity style={[styles.paginationBtn, currentPage === 1 && styles.paginationBtnDisabled]} onPress={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>
+                    <MaterialCommunityIcons name="chevron-left" size={20} color={currentPage === 1 ? (isDark ? '#475569' : '#CBD5E1') : '#06B6D4'} />
+                  </TouchableOpacity>
+                  <View style={styles.paginationPages}>
+                    {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
+                      let pageNum: number;
+                      if (totalPages <= 7) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 4) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 3) {
+                        pageNum = totalPages - 6 + i;
+                      } else {
+                        pageNum = currentPage - 3 + i;
+                      }
+                      return (
+                        <TouchableOpacity key={pageNum} style={[styles.pageBtn, currentPage === pageNum && { backgroundColor: '#06B6D4', borderColor: '#06B6D4' }]} onPress={() => setCurrentPage(pageNum)}>
+                          <Text style={[styles.pageBtnText, currentPage === pageNum && { color: '#FFFFFF', fontWeight: '800' }]}>
+                            {pageNum}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  <TouchableOpacity style={[styles.paginationBtn, currentPage === totalPages && styles.paginationBtnDisabled]} onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}>
+                    <MaterialCommunityIcons name="chevron-right" size={20} color={currentPage === totalPages ? (isDark ? '#475569' : '#CBD5E1') : '#06B6D4'} />
+                  </TouchableOpacity>
+                </View>
+              </View>
             )}
-          </ScrollView>
-        </>
-      )}
+          </React.Fragment>
+        )}
+      </ScrollView>
+
       {/* Multi-Step Form Modal */}
       <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
         <SafeAreaView style={[styles.modalContainer, { backgroundColor: isDark ? '#0F172A' : '#F8FAFC' }]}>
@@ -1429,7 +1021,7 @@ function TabNavigationArticles({ isDark }) {
               <MaterialCommunityIcons name="close" size={24} color={isDark ? '#F1F5F9' : '#0F172A'} />
             </TouchableOpacity>
             <Text style={[styles.modalTitle, { color: isDark ? '#F1F5F9' : '#0F172A' }]}>
-              {editingId ? 'Modifier l\'annonce' : 'Créer une nouvelle annonce'}
+              {editingId ? 'Modifier l\'annonce' : 'Ajouter une annonce'}
             </Text>
             <View style={{ width: 24 }} />
           </View>
@@ -1438,7 +1030,6 @@ function TabNavigationArticles({ isDark }) {
           <View style={styles.progressContainer}>
             {[1, 2, 3, 4].map((step) => (
               <View key={step} style={styles.progressBar}>
-                
                 <View
                   style={[
                     styles.progressDot,
@@ -1452,7 +1043,6 @@ function TabNavigationArticles({ isDark }) {
                       color: step <= formStep ? '#FFFFFF' : isDark ? '#94A3B8' : '#64748B',
                       fontSize: 10,
                       fontWeight: '700',
-                      
                     }}
                   >
                     {step}
@@ -1526,7 +1116,7 @@ function TabNavigationArticles({ isDark }) {
                     <Text style={[styles.label, { color: isDark ? '#F1F5F9' : '#0F172A' }]}>Type de listing</Text>
                     <View style={styles.buttonGroup}>
                       <TouchableOpacity
-                        style={[styles.typeBtn, { backgroundColor: formData.listingType === 'sale' ? '#06B6D4' : isDark ? '#1E293B' : '#F1F5F9'}]}
+                        style={[styles.typeBtn, { backgroundColor: formData.listingType === 'sale' ? '#10B981' : isDark ? '#1E293B' : '#F1F5F9', borderColor: formData.listingType === 'sale' ? '#10B981' : isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)' }]}
                         onPress={() => setFormData({ ...formData, listingType: 'sale' })}
                       >
                         <MaterialCommunityIcons name="tag-multiple" size={18} color={formData.listingType === 'sale' ? '#FFFFFF' : isDark ? '#94A3B8' : '#64748B'} />
@@ -1563,7 +1153,7 @@ function TabNavigationArticles({ isDark }) {
                         borderColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)',
                       },
                     ]}
-                    placeholder="Ex: Maison confortable à (ville)"
+                    placeholder="Ex: Maison confortable à Goma"
                     placeholderTextColor={isDark ? '#94A3B8' : '#64748B'}
                     value={formData.title || ''}
                     onChangeText={(text) => setFormData({ ...formData, title: text })}
@@ -1581,7 +1171,7 @@ function TabNavigationArticles({ isDark }) {
                         borderColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)',
                       },
                     ]}
-                    placeholder="Ex: (ville), Quartier X"
+                    placeholder="Ex: Goma, Quartier X"
                     placeholderTextColor={isDark ? '#94A3B8' : '#64748B'}
                     value={formData.location || ''}
                     onChangeText={(text) => setFormData({ ...formData, location: text })}
@@ -1638,7 +1228,7 @@ function TabNavigationArticles({ isDark }) {
                 </View>
 
                 <View style={styles.formGroup}>
-                  <Text style={[styles.label, { color: isDark ? '#F1F5F9' : '#0F172A' }]}> Prix de visite(non obligatoire)</Text>
+                  <Text style={[styles.label, { color: isDark ? '#F1F5F9' : '#0F172A' }]}> Prix de visite</Text>
                   <TextInput
                     style={[
                       styles.input,
@@ -1658,19 +1248,13 @@ function TabNavigationArticles({ isDark }) {
                 {/* Remplacez votre boucle d'attributs par celle-ci */}
                 {formData.type && CategoryAttributes[formData.type as keyof typeof CategoryAttributes] && (
                   <View style={styles.dynamicAttributesContainer}>
+                  <Text style={[styles.label, { color: isDark ? '#F1F5F9' : '#0F172A' }]}> Ajouter des détails </Text>
 
                     {CategoryAttributes[formData.type as keyof typeof CategoryAttributes].map((attr: string) => (
                       <View key={attr} style={styles.inputWrapper}>
                         <Text style={[styles.label, { color: isDark ? '#F1F5F9' : '#0F172A' }]}>{attr}</Text>
                         <TextInput
-                           style={[
-                      styles.input,
-                      {
-                        backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
-                        color: isDark ? '#F1F5F9' : '#0F172A',
-                        borderColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)',
-                      },
-                    ]}
+                          style={styles.input}
                           value={String((formData.details?.[attr]) || '')}
                           onChangeText={(value) => setFormData({
                             ...formData,
@@ -1680,14 +1264,14 @@ function TabNavigationArticles({ isDark }) {
                         />
                       </View>
                     ))}
-
+                    
                   </View>
                 )}
 
                 {/* Real Estate Details */}
                 {isRealEstate && (
                   <>
-                    <Text style={[styles.subSectionTitle, { color: isDark ? '#F1F5F9' : '#0F172A', marginTop: 20, marginBottom: 14 }]}>
+                    <Text style={[styles.subSectionTitle, { color: isDark ? '#F1F5F9' : '#0F172A', marginTop: 20, marginBottom: 12 }]}>
                       Détails du bien
                     </Text>
 
@@ -1855,8 +1439,8 @@ function TabNavigationArticles({ isDark }) {
 
                 {/* Upload Progress */}
                 {uploadProgress && (
-                  <View style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)', padding: 14, borderRadius: 8, marginBottom: 14 }}>
-                    <Text style={[{ color: isDark ? '#06B6D4' : '#0E7490', fontSize: 14, fontWeight: '600' }]}>
+                  <View style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)', padding: 12, borderRadius: 8, marginBottom: 12 }}>
+                    <Text style={[{ color: isDark ? '#06B6D4' : '#0E7490', fontSize: 12, fontWeight: '600' }]}>
                       {uploadProgress}
                     </Text>
                   </View>
@@ -1864,7 +1448,7 @@ function TabNavigationArticles({ isDark }) {
 
                 {/* Add Media Button */}
                 <TouchableOpacity
-                  style={[styles.addMediaBtn, { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, paddingVertical: 14, backgroundColor: uploading ? '#9CA3AF' : '#06B6D4' }]}
+                  style={[styles.addMediaBtn, { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, paddingVertical: 12, backgroundColor: uploading ? '#9CA3AF' : '#06B6D4' }]}
                   onPress={mediaTab === 'images' ? handlePickImage : handlePickVideo}
                   disabled={uploading}
                 >
@@ -1881,7 +1465,7 @@ function TabNavigationArticles({ isDark }) {
                 {/* Media Preview */}
                 {(mediaTab === 'images' ? (formData.images || []) : (formData.videos || [])).length > 0 && (
                   <View style={{ marginTop: 16 }}>
-                    <Text style={[styles.label, { color: isDark ? '#F1F5F9' : '#0F172A', marginBottom: 14 }]}>
+                    <Text style={[styles.label, { color: isDark ? '#F1F5F9' : '#0F172A', marginBottom: 12 }]}>
                       {mediaTab === 'images' ? 'Aperçu des images' : 'Aperçu des vidéos'}
                     </Text>
 
@@ -1928,7 +1512,7 @@ function TabNavigationArticles({ isDark }) {
                               <MaterialCommunityIcons name="close" size={16} color="#FFFFFF" />
                             </TouchableOpacity>
                             {(url.startsWith('file://') || url.includes('Documents')) && (
-                              <View style={[styles.localBadge, { backgroundColor: 'rgba(16, 185, 149, 0.9)' }]}>
+                              <View style={[styles.localBadge, { backgroundColor: 'rgba(16, 185, 129, 0.9)' }]}>
                                 <Text style={styles.localBadgeText}>Local</Text>
                               </View>
                             )}
@@ -2599,8 +2183,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(99,102,241,0.06)',
-    borderRadius: 14,
-    paddingHorizontal: 14,
+    borderRadius: 12,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     marginVertical: 8,
     gap: 8,
@@ -2674,7 +2258,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    gap: 14,
+    gap: 12,
   },
   headerTitle: {
     fontSize: 16,
@@ -2682,7 +2266,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
     marginTop: 4,
   },
@@ -2690,7 +2274,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderRadius: 13,
     shadowOpacity: 0.4,
-    shadowRadius: 14,
+    shadowRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     alignContent: 'center',
@@ -2702,7 +2286,7 @@ const styles = StyleSheet.create({
     alignContent: 'center',
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: 12,
   },
   addBtnText: {
     color: '#FFFFFF',
@@ -2712,18 +2296,15 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
-    gap: 14,
-    justifyContent: 'space-between',
-    alignContent: 'center',
-    paddingHorizontal: 10,
+    gap: 12,
   },
   statCard: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     borderRadius: 14,
     borderWidth: 1.5,
   },
@@ -2741,7 +2322,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 11,
     fontWeight: '600',
-    // marginBottom: 2,
+    marginBottom: 2,
   },
   statValue: {
     fontSize: 18,
@@ -2754,22 +2335,22 @@ const styles = StyleSheet.create({
   addBtn: {
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: 12,
     backgroundColor: '#06B6D4',
     justifyContent: 'center',
     alignItems: 'center',
   },
   filterBar: {
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     gap: 10,
   },
   filterBarContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderBottomWidth: 0,
-    gap: 14,
+    gap: 12,
   },
   searchSection: {
     gap: 8,
@@ -2813,7 +2394,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
@@ -2821,7 +2402,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(99, 102, 241, 0.04)',
   },
   filterBtnText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
   articlesGrid: {
@@ -2895,7 +2476,7 @@ const styles = StyleSheet.create({
     color: '#06B6D4',
   },
   content: {
-    padding: 14,
+    padding: 12,
     gap: 10,
   },
   emptyState: {
@@ -2909,16 +2490,14 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   articleCard: {
-    borderRadius: 10,
+    borderRadius: 20,
+    borderWidth: 1.3,
     overflow: 'hidden',
     marginBottom: 16,
-    display: 'flex',
-    flexDirection: 'column',
-
-    borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.1)',
-    backgroundColor: 'rgba(99, 102, 241, 0.04)',
-
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 15,
   },
   mediaGallery: {
     position: 'relative',
@@ -2948,7 +2527,7 @@ const styles = StyleSheet.create({
   },
   mediaCountText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '800',
   },
   articleContent: {
@@ -2983,7 +2562,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   metaValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '800',
   },
   badge: {
@@ -2996,7 +2575,7 @@ const styles = StyleSheet.create({
   articleActions: {
     flexDirection: 'row',
     gap: 10,
-    padding: 14,
+    padding: 12,
     justifyContent: 'space-between',
     borderTopWidth: 1,
     borderTopColor: 'rgba(99, 102, 241, 0.1)',
@@ -3005,8 +2584,8 @@ const styles = StyleSheet.create({
   actionBtn: {
     flex: 1,
     paddingVertical: 13,
-    paddingHorizontal: 14,
-    borderRadius: 14,
+    paddingHorizontal: 12,
+    borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -3060,7 +2639,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 14,
     left: 14,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 10,
     flexDirection: 'row',
@@ -3081,7 +2660,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   descriptionSnippet: {
-    fontSize: 14,
+    fontSize: 12,
     lineHeight: 17,
     marginTop: 7,
     marginBottom: 0,
@@ -3143,11 +2722,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   detailRowLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
   detailRowValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
   },
   realEstateDetailsSection: {
@@ -3167,7 +2746,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 11,
     paddingHorizontal: 7,
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1.2,
     gap: 3,
     shadowColor: '#000000',
@@ -3237,7 +2816,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   detailCardValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '800',
   },
   detailCardLabel: {
@@ -3248,7 +2827,7 @@ const styles = StyleSheet.create({
   additionalAreasSection: {
     gap: 8,
     marginTop: 10,
-    paddingTop: 14,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: 'rgba(99, 102, 241, 0.1)',
   },
@@ -3257,7 +2836,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     borderRadius: 9,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     marginVertical: 4,
@@ -3277,20 +2856,20 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   areaDetailValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
     marginTop: 2,
   },
   actionBtnText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
     marginLeft: 0,
   },
   modalContainer: {
     flex: 1,
-    marginTop: 10,
-    paddingTop: 25
+    marginTop : 10,
+    paddingTop : 25
   },
   modalHeader: {
     flexDirection: 'row',
@@ -3310,7 +2889,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 20,
-    marginBottom: 20,
+    marginBottom : 20,
     gap: 8,
   },
   progressBar: {
@@ -3326,7 +2905,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
-    marginTop: 7,
   },
   modalContent: {
     paddingVertical: 20,
@@ -3352,13 +2930,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginTop: 14,
+    marginTop: 12,
   },
   categoryCard: {
     width: '31%',
     paddingVertical: 16,
-    paddingHorizontal: 14,
-    borderRadius: 14,
+    paddingHorizontal: 12,
+    borderRadius: 12,
     borderWidth: 2,
     alignItems: 'center',
     gap: 8,
@@ -3394,9 +2972,9 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   input: {
-    borderRadius: 14,
+    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     fontSize: 14,
     marginTop: 7,
     borderWidth: 1,
@@ -3407,16 +2985,17 @@ const styles = StyleSheet.create({
   },
   buttonGroup: {
     flexDirection: 'row',
-    gap: 14,
+    gap: 12,
   },
   typeBtn: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,
+    borderWidth: 1,
   },
   typeBtnText: {
     fontSize: 14,
@@ -3428,7 +3007,7 @@ const styles = StyleSheet.create({
   mediaTabs: {
     flexDirection: 'row',
     gap: 10,
-    marginBottom: 14,
+    marginBottom: 12,
   },
   mediaTab: {
     flex: 1,
@@ -3437,18 +3016,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     borderRadius: 10,
     backgroundColor: 'rgba(99, 102, 241, 0.08)',
   },
   mediaTabText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
   },
   addMediaBtn: {
     backgroundColor: '#06B6D4',
-    borderRadius: 14,
-    paddingVertical: 14,
+    borderRadius: 12,
+    paddingVertical: 12,
   },
   imageGallery: {
     flexDirection: 'row',
@@ -3459,7 +3038,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: '48%',
     aspectRatio: 1,
-    borderRadius: 14,
+    borderRadius: 12,
     overflow: 'hidden',
     backgroundColor: '#E2E8F0',
   },
@@ -3482,7 +3061,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 4,
     left: 4,
-    backgroundColor: 'rgba(16, 185, 149, 0.9)',
+    backgroundColor: 'rgba(16, 185, 129, 0.9)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -3501,13 +3080,13 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: '48%',
     aspectRatio: 1,
-    borderRadius: 14,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   videoThumbnail: {
     width: '100%',
     height: '100%',
-    borderRadius: 14,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -3533,7 +3112,7 @@ const styles = StyleSheet.create({
   },
   videoNumber: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
   },
   removeVideoThumbnailBtn: {
@@ -3550,14 +3129,14 @@ const styles = StyleSheet.create({
   footerButtons: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderTopWidth: 1,
-    gap: 14,
+    gap: 12,
   },
   navBtn: {
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 14,
+    borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -3567,14 +3146,14 @@ const styles = StyleSheet.create({
   lightboxContainer: {
     flex: 1,
     backgroundColor: '#000000',
-    paddingTop: 30
+    paddingTop  : 30
   },
   lightboxHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(99, 102, 241, 0.2)',
@@ -3612,23 +3191,23 @@ const styles = StyleSheet.create({
     top: '50%',
     marginTop: -16,
     zIndex: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
   lightboxNavBtnLeft: {
-    left: 14,
+    left: 12,
   },
   lightboxNavBtnRight: {
-    right: 14,
+    right: 12,
   },
   lightboxThumbnailsContainer: {
     backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: 'rgba(99, 102, 241, 0.2)',
   },
   lightboxThumbnailsList: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     gap: 8,
   },
   lightboxThumbnail: {
@@ -3645,7 +3224,7 @@ const styles = StyleSheet.create({
   },
   lightboxControlsBottom: {
     flexDirection: 'row',
-    gap: 14,
+    gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
     backgroundColor: 'rgba(0, 0, 0, 0.95)',
@@ -3657,7 +3236,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderRadius: 8,
   },
   // Upload Progress Modal Styles
@@ -3687,7 +3266,7 @@ const styles = StyleSheet.create({
   progressPercentage: {
     fontSize: 18,
     fontWeight: '800',
-    marginTop: 14,
+    marginTop: 12,
   },
   uploadProgressBar: {
     width: '100%',
@@ -3743,141 +3322,15 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   dynamicAttributesContainer: {
-    paddingVertical: 15,
+    marginTop: 20,
+    padding: 15,
     borderRadius: 16,
+    backgroundColor: 'rgba(99, 102, 241, 0.05)', // Léger fond teinté indigo
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.1)',
   },
   inputWrapper: {
     marginBottom: 15,
     marginTop: 10,
   },
-  topBar: {
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  welcomeContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    marginHorizontal: 56,
-    borderColor: 'red',
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignContent: 'space-between',
-    borderWidth: 1,
-    gap: 14,
-    borderRadius: 16,
-    // backgroundColor: '#FFFFFF',
-  },
-
-  welcomeSubtitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#475569',
-  },
-  avatarContainer: {
-
-    justifyContent: 'center',
-    alignItems: 'center',
-    // maxWidth: 100,
-    overflow: 'hidden',
-
-  },
-  avatar: {
-    width: 100,
-    height: 130,
-  },
-  headerIconContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 4,
-    width: '60%',
-    alignItems: 'flex-start',
-
-  },
-  headerPanel: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 26,
-    paddingVertical: 2,
-
-  },
-  welcomeText: {
-
-    // color: "#06B6D4",
-    fontWeight: '700',
-    fontSize: 18,
-  },
-  statButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    borderRadius: 11,
-    width: 180,
-    // backgroundColor: 'rgba(99, 102, 241, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.2)',
-    height: 170,
-    // margin : 0,
-    alignItems: 'center',
-    // display: 'flex',
-    // alignContent: 'center',
-
-    // justifyContent: 'flex-start',
-
-
-  },
-  statSection: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 18,
-    justifyContent: 'space-between',
-    marginBottom: 20,
-    // marginHorizontal: 1,
-    alignItems: 'center',
-  },
-  screenTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-  },
-  addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: '#06B6D4',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-
-  },
-  statIconText: {
-    color: '#06B6D4',
-    fontSize: 14,
-    fontWeight: '700',
-  }, 
-  avatarPlaceholder :{
-    width: 100,
-    height: 130,
-    borderRadius: 14,
-  }
-
-
-
 });

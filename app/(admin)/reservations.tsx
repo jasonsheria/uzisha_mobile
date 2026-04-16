@@ -32,6 +32,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAdmin } from '@/contexts/AdminContext';
+import { useNetwork } from '@/contexts/NetworkContext';
 import { supabase } from '@/utils/supabase';
 import { sendImmediateNotification } from '@/utils/notificationService';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -41,10 +42,10 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const THEME = {
   colors: {
-    primary: '#6366F1',
+    primary: '#06B6D4',
     secondary: '#A855F7',
     accent: '#06B6D4',
-    success: '#10B981',
+    success: '#06B6D4',
     danger: '#EF4444',
     warning: '#F59E0B',
     info: '#3B82F6',
@@ -76,7 +77,7 @@ interface Reservation {
   clientName: string;
   clientEmail: string;
   clientPhone: string;
-  requestedDate: string;
+  requestedDate: Date;
   status: 'pending' | 'confirmed' | 'cancelled';
   // Propriétés ajoutées ou calculées
   total_price: number;
@@ -84,8 +85,9 @@ interface Reservation {
   location?: string;
   notes?: string;
   priority?: 'high' | 'medium' | 'low';
-  check_in?: Date;
-  check_out?: Date;
+  heure: any;
+  check_in: Date;
+  check_out: Date;
   guests?: number;
   propertyImage?: string;
   clientAvatar?: string;
@@ -154,51 +156,58 @@ const FilterChip = ({ label, active, onPress, isDark, icon }: any) => (
 /** * --- 5. ECRAN PRINCIPAL --- 
  */
 export default function ReservationsScreen() {
+  const { isConnected } = useNetwork();
   const isDark = useColorScheme() === 'dark';
   const theme = isDark ? THEME.colors.dark : THEME.colors.light;
-  const { setReservations} = useAdmin(); // Ajout de setReservations pour mettre à jour le contexte après une action
+  // Rafraîchit les réservations à la reconnexion
+  React.useEffect(() => {
+    if (isConnected && fetchReservations) fetchReservations();
+  }, [isConnected]);
   // Accès au contexte
   const { user } = useAuthContext();
   const currentUserId = user?.id; // ID de l'utilisateur connecté
   const [reservation, setReservation] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchReservations = async () => {
-      setLoading(true);
-      // Requête avec jointure pour récupérer les infos de la propriété et du client
-      // récuperer uniquement les reservations dont je suis le propriétaire de la propriété
-      const { data, error } = await supabase
-        .from('reservations')
-        .select(`*,
+  const fetchReservations = async () => {
+    setLoading(true);
+    // Requête avec jointure pour récupérer les infos de la propriété et du client
+    // récuperer uniquement les reservations dont je suis le propriétaire de la propriété
+    const { data, error } = await supabase
+      .from('reservations')
+      .select(`*,
         property:property_id (id, title, location, image),
         user:user_id (id, name, email, phone, avatar)
       `)
-        .eq('property.user_id', currentUserId)
-        .order('created_at', { ascending: false });
+      .eq('property.user_id', currentUserId)
+      .order('created_at', { ascending: false });
 
-      if (!error && data) {
+    if (!error && data) {
 
-        setReservation(data.map((res: any) => ({
-          id: res.id,
-          user_id: res.user_id,
-          property_id: res.property_id,
-          propertyTitle: res.property?.title ?? 'Titre inconnu',
-          clientName: res.user?.name ?? 'Client inconnu',
-          clientEmail: res.user?.email ?? '',
-          clientPhone: res.user?.phone ?? '',
-          requestedDate: res.created_at,
-          status: res.status,
-          total_price: res.total_price,
-          TransactionType: res.transactionType,
-          location: res.property?.location ?? '',
-          notes: res.notes,
-          propertyImage: res.property?.image ?? '',
-          clientAvatar: res.user?.avatar ?? ''
-        })));
-      }
-      setLoading(false);
-    };
+      setReservation(data.map((res: any) => ({
+        id: res.id,
+        user_id: res.user_id,
+        property_id: res.property_id,
+        propertyTitle: res.property?.title ?? 'Titre inconnu',
+        clientName: res.user?.name ?? 'Client inconnu',
+        clientEmail: res.user?.email ?? '',
+        clientPhone: res.user?.phone ?? '',
+        requestedDate: res.check_in,
+        heure: res.time_slot,
+        status: res.status,
+        total_price: res.total_price,
+        TransactionType: res.transactionType,
+        location: res.property?.location ?? '',
+        notes: res.notes,
+        propertyImage: res.property?.image ?? '',
+        clientAvatar: res.user?.avatar ?? '',
+        check_in: res.check_in ? new Date(res.check_in) : new Date(), // Date par défaut si vide
+        check_out: res.check_out ? new Date(res.check_out) : new Date(),
+      })));
+    }
+    setLoading(false);
+  };
+  useEffect(() => {
+
     fetchReservations();
 
   }, []);
@@ -208,83 +217,83 @@ export default function ReservationsScreen() {
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'confirmed'>('all');
   const [selectedRes, setSelectedRes] = useState<Reservation | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-// À placer dans un useEffect au lancement de l'application côté client
-useEffect(() => {
-  const channel = supabase
-    .channel('realtime_notifications')
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications',
-        filter: `user_id=eq.${currentUserId}`, // Filtrer pour l'utilisateur connecté
-      },
-      (payload) => {
-        const newNotif = payload.new;
-        // DÉCLENCHE LE SON ET LA BANNIÈRE EN TEMPS RÉEL
-        sendImmediateNotification(
-          newNotif.title,
-          newNotif.body,
-          'booking' // Canal avec son HIGH importance
-        );
-      }
-    )
-    .subscribe();
+  // À placer dans un useEffect au lancement de l'application côté client
+  useEffect(() => {
+    const channel = supabase
+      .channel('realtime_notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${currentUserId}`, // Filtrer pour l'utilisateur connecté
+        },
+        (payload) => {
+          const newNotif = payload.new;
+          // DÉCLENCHE LE SON ET LA BANNIÈRE EN TEMPS RÉEL
+          sendImmediateNotification(
+            newNotif.title,
+            newNotif.body,
+            'booking' // Canal avec son HIGH importance
+          );
+        }
+      )
+      .subscribe();
 
-  return () => { supabase.removeChannel(channel); };
-}, [currentUserId]);
+    return () => { supabase.removeChannel(channel); };
+  }, [currentUserId]);
   // Animation Modal
   const modalY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   // 2. Confirmation avec émission de notification
   // 2. Confirmation avec émission de notification
- const confirmReservation = async (data: Reservation) => {
-  try {
-    // 1. Mise à jour du statut
-    const { error: updateError } = await supabase
-      .from('reservations')
-      .update({ status: 'confirmed' })
-      .eq('id', data.id);
+  const confirmReservation = async (data: Reservation) => {
+    try {
+      // 1. Mise à jour du statut
+      const { error: updateError } = await supabase
+        .from('reservations')
+        .update({ status: 'confirmed' })
+        .eq('id', data.id);
 
-    if (updateError) throw updateError;
+      if (updateError) throw updateError;
 
-    // 2. Préparation des textes
-    const isAchat = data.TransactionType === 'achat';
-    const notifTitle = isAchat ? 'Achat confirmé ✅' : 'Réservation confirmée ✅';
-    const notifBody = `Votre ${isAchat ? 'achat' : 'réservation'} pour "${data.propertyTitle}" a été validé.`;
+      // 2. Préparation des textes
+      const isAchat = data.TransactionType === 'achat';
+      const notifTitle = isAchat ? 'Achat confirmé ✅' : 'Réservation confirmée ✅';
+      const notifBody = `Votre ${isAchat ? 'achat' : 'réservation'} pour "${data.propertyTitle}" a été validé.`;
 
-    // 3. Notification pour l'UTILISATEUR (Via Supabase)
-    // Cela déclenchera l'écouteur Realtime sur son téléphone
-    const { error: notifError } = await supabase
-      .from('notifications')
-      .insert([{
-        user_id: data.user_id,
-        reservation_id: data.id,
-        title: notifTitle,
-        body: notifBody,
-        type: 'booking',
-        is_read: false
-      }]);
+      // 3. Notification pour l'UTILISATEUR (Via Supabase)
+      // Cela déclenchera l'écouteur Realtime sur son téléphone
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert([{
+          user_id: data.user_id,
+          reservation_id: data.id,
+          title: notifTitle,
+          body: notifBody,
+          type: 'booking',
+          is_read: false
+        }]);
 
-    if (notifError) throw notifError;
+      if (notifError) throw notifError;
 
-    // 4. Notification pour VOUS (Locale & Sonore immédiate)
-    // On utilise le channelId 'booking' pour garantir le son
-    await sendImmediateNotification(
-      'Action effectuée',
-      `Vous avez validé le dossier de ${data.clientName}`,
-      'booking' 
-    );
+      // 4. Notification pour VOUS (Locale & Sonore immédiate)
+      // On utilise le channelId 'booking' pour garantir le son
+      await sendImmediateNotification(
+        'Action effectuée',
+        `Vous avez validé le dossier de ${data.clientName}`,
+        'booking'
+      );
 
-    // 5. Mise à jour UI
-    setReservation(prev => prev.map(r => r.id === data.id ? { ...r, status: 'confirmed' } : r));
-    Alert.alert("Succès", "Le client a été notifié et le dossier est validé.");
+      // 5. Mise à jour UI
+      setReservation(prev => prev.map(r => r.id === data.id ? { ...r, status: 'confirmed' } : r));
+      Alert.alert("Succès", "Le client a été notifié et le dossier est validé.");
 
-  } catch (error: any) {
-    console.error("Erreur:", error);
-    Alert.alert("Erreur", "Une erreur est survenue.");
-  }
-};
+    } catch (error: any) {
+      console.error("Erreur:", error);
+      Alert.alert("Erreur", "Une erreur est survenue.");
+    }
+  };
 
   // 3. Annulation avec émission de notification
   const cancelReservation = async (data: Reservation) => {
@@ -364,6 +373,18 @@ useEffect(() => {
         {
           text: "Confirmer",
           onPress: () => {
+            // verifier si la date n'est pas encore passée avant de confirmer
+            const today = new Date();
+            const requestedDate = data.check_in;
+            if (type === 'confirm' && requestedDate instanceof Date && requestedDate < today) {
+              Alert.alert("Date invalide", "La date demandée est déjà passée veuillez le contacter pour une nouvelle reservation ou commande.");
+              // supprimer la reservation expirée
+              const deleteExpired = async () => {
+                const { error } = await supabase.from('reservations').delete().eq('id', data.id);
+              };
+              deleteExpired();
+              return;
+            }
             type === 'confirm' ? confirmReservation(data) : cancelReservation(data);
             closeModal();
             LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
@@ -372,6 +393,14 @@ useEffect(() => {
       ]
     );
   };
+  // fonction de formattage de date en date ex Samedi 4 avril 2016
+
+  const dateformate = (dateString: Date) => {
+    const date = (dateString);
+    const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+    return date.toLocaleDateString('fr-FR', options);
+  };
+
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -455,7 +484,11 @@ useEffect(() => {
                 <View style={styles.footerInfo}>
                   <Feather name="calendar" size={14} color={theme.subtext} />
                   <Text style={[styles.footerText, { color: theme.subtext }]}>
-                    {new Date(item.requestedDate).toLocaleDateString()}
+                    {item.check_out && new Date(item.check_out) < new Date()
+                      ? "Date expirée"
+                      : item.check_in
+                        ? dateformate(item.check_in)
+                        : "Date non définie"}
                   </Text>
                 </View>
                 <View style={styles.footerInfo}>
@@ -505,6 +538,12 @@ useEffect(() => {
                   <InfoRow icon="mail" label="Email" value={selectedRes.clientEmail} isDark={isDark} />
                   <InfoRow icon="phone" label="Contact" value={selectedRes.clientPhone} isDark={isDark} />
                   <InfoRow icon="map-pin" label="Lieu" value={selectedRes.location} isDark={isDark} />
+                  {/* Ajouter la date formatter */}
+                  <InfoRow icon="calendar" label="Date de racontre" value={dateformate(selectedRes.check_in)} isDark={isDark} />
+
+                  {/* Ajouter l'heure de racontre */}
+
+                  <InfoRow icon="clock" label="Heure de racontre" value={selectedRes.heure} isDark={isDark} />
                 </View>
 
                 <Text style={styles.sectionLabel}>Notes Additionnelles</Text>

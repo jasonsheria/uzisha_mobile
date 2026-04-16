@@ -108,7 +108,7 @@ export type BOUTIQUE = {
   //information physique
   province: string;
   Territoire: string;
-  Ville: string;
+  ville: string;
   commune: string
 }
 // Types pour les réservations

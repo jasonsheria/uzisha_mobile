@@ -19,6 +19,7 @@ import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { supabase } from '@/utils/supabase';
 import { useColorScheme } from '@/components/useColorScheme';
+import { useNetwork } from '@/contexts/NetworkContext';
 import Colors from '@/constants/Colors';
 // importer le height
 const { height } = Dimensions.get('window');
@@ -46,6 +47,7 @@ interface Conversation {
 }
 
 export default function MessagingListScreen() {
+  const { isConnected } = useNetwork();
   const router = useRouter();
   const isDark = useColorScheme() === 'dark';
   const styles = getStyles(isDark);
@@ -137,6 +139,13 @@ export default function MessagingListScreen() {
     });
     return () => { isMounted.current = false; };
   }, [fetchConversations]);
+
+  // Rafraîchit les conversations à la reconnexion
+  useEffect(() => {
+    if (isConnected && userId) {
+      fetchConversations(userId);
+    }
+  }, [isConnected]);
 
   const filteredConversations = useMemo(() => {
     return conversations.filter(c => {

@@ -14,6 +14,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useColorScheme } from '../../components/useColorScheme';
 import Colors from '../../constants/Colors';
 import { useTheme } from '@/contexts/ThemeContext';
+import { NetworkProvider } from '@/contexts/NetworkContext';
 
 const { width } = Dimensions.get('window');
 
@@ -61,7 +62,7 @@ const EliteDiamondTabBar: React.FC<CustomTabBarProps> = ({
   });
   const diamondColor = scrollX.interpolate({
     inputRange: [0, screenWidth, screenWidth * 2],
-    outputRange: ['#0ea5e9', '#d4af37', '#ef4444'], // Couleurs primaires
+    outputRange: ['#06B6D4', '#d4af37', '#ef4444'], // Couleurs primaires
   });
   // Animations
   const fabAnim = useRef(new Animated.Value(0)).current;
@@ -113,7 +114,7 @@ const EliteDiamondTabBar: React.FC<CustomTabBarProps> = ({
   const rightRoutes = visibleRoutes.slice(2, 4);
   const dynamicColor = scrollX.interpolate({
     inputRange: [0, screenWidth, screenWidth * 2],
-    outputRange: ['#0ea5e9', '#d4af37', '#ef4444'], // TECH, LUXURY, SPORT
+    outputRange: ['#06B6D4', '#d4af37', '#ef4444'], // TECH, LUXURY, SPORT
     extrapolate: 'clamp',
   })
   const renderTabItem = (route: any, index: number) => {
@@ -233,55 +234,56 @@ export default function TabLayout() {
   const { isDark } = useTheme();
 
   return (
-    <Tabs
-      tabBar={(props) => <EliteDiamondTabBar {...props} isDark={isDark} />}
-      screenOptions={{
-        headerShown: false,
-        tabBarHideOnKeyboard: true,
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="view-dashboard-outline" size={ICON_SIZE} color={color} />
-          ),
+    <NetworkProvider>
+      <Tabs
+        tabBar={(props) => <EliteDiamondTabBar {...props} isDark={isDark} />}
+        screenOptions={{
+          headerShown: false,
+          tabBarHideOnKeyboard: true,
         }}
-      />
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: 'Home',
+            tabBarIcon: ({ color }) => (
+              <MaterialCommunityIcons name="view-dashboard-outline" size={ICON_SIZE} color={color} />
+            ),
+          }}
+        />
 
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: 'Recherche',
-          tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="map-marker-radius-outline" size={ICON_SIZE} color={color} />
-          ),
-        }}
-      />
+        <Tabs.Screen
+          name="search"
+          options={{
+            title: 'Recherche',
+            tabBarIcon: ({ color }) => (
+              <MaterialCommunityIcons name="map-marker-radius-outline" size={ICON_SIZE} color={color} />
+            ),
+          }}
+        />
 
+        <Tabs.Screen
+          name="messaging"
+          options={{
+            title: 'Messages',
+            tabBarBadge: 5,
+            tabBarIcon: ({ color }) => (
+              <MaterialCommunityIcons name="chat-processing-outline" size={ICON_SIZE} color={color} />
+            ),
+          }}
+        />
 
-      <Tabs.Screen
-        name="messaging"
-        options={{
-          title: 'Messages',
-          tabBarBadge: 5,
-          tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="chat-processing-outline" size={ICON_SIZE} color={color} />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Settings',
-          tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="tune" size={ICON_SIZE} color={color} />
-          ),
-        }}
-      />
-    </Tabs>
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: 'Settings',
+            tabBarIcon: ({ color }) => (
+              <MaterialCommunityIcons name="tune" size={ICON_SIZE} color={color} />
+            ),
+          }}
+        />
+      </Tabs>
+    </NetworkProvider>
   );
 }
 

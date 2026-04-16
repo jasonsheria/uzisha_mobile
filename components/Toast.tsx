@@ -83,7 +83,7 @@ export function Toast({ message, onHide }: ToastProps) {
         return {
           bgColor: '#DBEAFE',
           textColor: '#0C4A6E',
-          iconColor: '#0EA5E9',
+          iconColor: '#06B6D4',
           icon: 'information',
         };
     }

@@ -6,8 +6,8 @@ import {
     Pressable, LayoutAnimation
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '@/constants/Colors';
 import { Ionicons, Feather, MaterialCommunityIcons, FontAwesome5, Entypo, MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
 import { Audio } from 'expo-av';
 import { ResizeMode } from 'expo-av';
@@ -20,11 +20,12 @@ import { BlurView } from 'expo-blur';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { supabase } from '@/utils/supabase';
-import { useColorScheme } from '@/components/useColorScheme';
 import {
     pickImage,
 
 } from '@/utils/uploadService';
+import { useTheme } from '@/contexts/ThemeContext';
+import { router } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
@@ -75,7 +76,8 @@ interface Boutique {
 
 export default function ConciergeChat({ otherUserId, onClose, boutique }: ConciergeChatProps) {
     const insets = useSafeAreaInsets();
-    const isDark = useColorScheme() === 'dark';
+    // const isDark = usethemecheme() === 'dark';
+    const { isDark, dynamicColor, theme } = useTheme();
     const flatListRef = useRef<FlatList>(null);
     const cameraRef = useRef<CameraView>(null);
     const recordingRef = useRef<Audio.Recording | null>(null);
@@ -90,7 +92,7 @@ export default function ConciergeChat({ otherUserId, onClose, boutique }: Concie
     const [loadingHistory, setLoadingHistory] = useState(true);
     const [isTyping, setIsTyping] = useState(false);
     const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const [camPerm, requestCam] = useCameraPermissions();
+    const [camPerm, estCam] = useCameraPermissions();
     const [micPerm, requestMic] = useMicrophonePermissions();
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
@@ -104,6 +106,16 @@ export default function ConciergeChat({ otherUserId, onClose, boutique }: Concie
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [callSession, setCallSession] = useState<CallSession | null>(null);
     const [callTimer, setCallTimer] = useState(0);
+    // Palette dynamique
+    const THEME = {
+        gold: isDark ? '#06B6D4' : '#0EA5E9',
+        dark: '#0A0A0A',
+        cardDark: isDark ? '#1E293B' : '#F9FAFB',
+        textGray: isDark ? '#CBD5E1' : '#64748B',
+        success: '#34C759',
+        danger: '#FF3B30',
+        white: '#FFFFFF'
+    };
     useEffect(() => {
         if (conversationId && currentUserId) {
             const channel = subscribeToMessages(conversationId, currentUserId);
@@ -114,6 +126,8 @@ export default function ConciergeChat({ otherUserId, onClose, boutique }: Concie
     }, [conversationId, currentUserId]);
     // Initialisation: recherche ou création de la conversation (comme dans la messagerie)
     useEffect(() => {
+        // voir si l'utilisateur est connecté, sinon rediriger vers login
+
         const initChat = async () => {
             try {
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -209,7 +223,7 @@ export default function ConciergeChat({ otherUserId, onClose, boutique }: Concie
             try {
                 setIsRecordingVideo(true);
                 setVideoTimer(0);
-                const timer = setInterval(() => setVideoTimer(t => t + 1), 1000);
+                const timer = setInterval(() => setVideoTimer(t => t + 1), 11000);
 
                 const video = await cameraRef.current?.recordAsync({ maxDuration: 60 });
 
@@ -397,8 +411,8 @@ export default function ConciergeChat({ otherUserId, onClose, boutique }: Concie
             // Timer pour l'UI
             const interval = setInterval(async () => {
                 const status = await recording.getStatusAsync();
-                setAudioDuration(Math.floor(status.durationMillis / 1000));
-            }, 1000);
+                setAudioDuration(Math.floor(status.durationMillis / 11000));
+            }, 11000);
             (recording as any)._interval = interval;
         } catch (err) { console.error(err); }
     };
@@ -551,78 +565,73 @@ export default function ConciergeChat({ otherUserId, onClose, boutique }: Concie
             <Text style={styles.attachLabel}>{label}</Text>
         </TouchableOpacity>
     );
-    if (!currentUserId) {
-        return (
-            // creer un preloader plus joli pour le chat
-            <View style={styles.container}>
-                <ActivityIndicator size="large" color="#06B6D4" />
-                <Text style={{ marginTop: 12, color: '#64748B' }}>Chargement du chat...</Text>
-            </View>
-        );
-    }
+
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
             <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-            {/* HEADER MODAL BOUTIQUE ULTRA PRO */}
-            {/* Ajouter le clavier pour que il apparait bas de input */}
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+            >
 
-            <BlurView intensity={90} tint={isDark ? 'dark' : 'light'} style={[styles.header, { overflow: 'hidden', borderBottomWidth: 0, backgroundColor: 'transparent', borderTopLeftRadius: 24, borderTopRightRadius: 24, shadowColor: Colors.primary, shadowOpacity: 0.12, shadowRadius: 16 }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingTop: 14, paddingBottom: 14, backgroundColor: isDark ? Colors.dark.background : Colors.gray100, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderBottomColor: isDark ? Colors.dark.border : Colors.light.border, borderBottomWidth: 1 }}>
-                    <TouchableOpacity onPress={onClose} style={[styles.backBtn, { marginRight: 10, backgroundColor: Colors.primary, borderRadius: 12, padding: 4 }]}>
-                        <Ionicons name="chevron-back" size={26} color="#FFF" />
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingTop: 4, paddingBottom: 14, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+                    <TouchableOpacity onPress={onClose} style={[styles.backBtn, { marginRight: 10, backgroundColor: isDark ? '#222' : '#FFF', borderRadius: 12, padding: 4, borderWidth: 1, borderColor: THEME.gold }]}>
+                        <Feather name="x" size={26} color={THEME.gold} />
                     </TouchableOpacity>
-                    <Image source={{ uri: boutique?.logo || boutique?.image || `https://i.pravatar.cc/150?u=${boutique?.id}` }} style={{ width: 44, height: 44, borderRadius: 14, marginRight: 14, backgroundColor: Colors.gray200, borderWidth: 2, borderColor: Colors.primary }} />
+                    <Image source={{ uri: boutique?.logo || boutique?.image || `https://i.pravatar.cc/150?u=${boutique?.id}` }} style={{ width: 44, height: 44, borderRadius: 14, marginRight: 14, backgroundColor: THEME.danger }} />
                     <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 20, fontWeight: 'bold', color: isDark ? Colors.dark.text : Colors.primary, letterSpacing: 0.2 }} numberOfLines={1}>
+                        <Text style={{ fontSize: 20, fontWeight: 'bold', color: THEME.gold, letterSpacing: 0.2 }} numberOfLines={1}>
                             {boutique?.name || 'Boutique'}
                         </Text>
-                        <Text style={{ fontSize: 13, color: isDark ? Colors.dark.textSecondary : Colors.gray600, marginTop: 2 }} numberOfLines={1}>
-                            {boutique?.type ? boutique.type.join(', ') : 'Type de boutique'}
-                        </Text>
+                        <View style={styles.onlineRow}>
+                            <View style={styles.onlineDot} />
+                            <Text style={styles.headerStatus}>En ligne</Text>
+                        </View>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
-                        <TouchableOpacity style={{ padding: 7, backgroundColor: Colors.primary, borderRadius: 10, marginRight: 2 }}>
+                        <TouchableOpacity style={{ padding: 7, backgroundColor: THEME.gold, borderRadius: 10, marginRight: 2 }}>
                             <Feather name="phone" size={18} color="#FFF" />
                         </TouchableOpacity>
-                        <TouchableOpacity style={{ padding: 7, backgroundColor: Colors.accent, borderRadius: 10, marginLeft: 8 }}>
+                        <TouchableOpacity style={{ padding: 7, backgroundColor: THEME.gold, borderRadius: 10, marginLeft: 8 }}>
                             <Feather name="video" size={18} color="#FFF" />
                         </TouchableOpacity>
                     </View>
                 </View>
-            </BlurView>
+                {/* </LinearGradient> */}
 
-            {/* LISTE DES MESSAGES */}
+                {/* LISTE DES MESSAGES */}
 
-            <View style={{ flex: 1, backgroundColor: isDark ? Colors.dark.background : Colors.gray100 }}>
-                <FlatList
-                    ref={flatListRef}
-                    data={messages}
-                    renderItem={renderMessage}
-                    inverted
-                    keyExtractor={(item) => item.id.toString()}
-                    contentContainerStyle={{
-                        paddingHorizontal: 16,
-                        paddingBottom: 20,
-                        paddingTop: 10,
-                        flexGrow: 1
-                    }}
-                    initialNumToRender={15}
-                    ListEmptyComponent={() => loadingHistory ? (
-                        <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 50 }} />
-                    ) : (
-                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100, transform: [{ scaleY: -1 }] }}>
-                            <MaterialCommunityIcons name="chat-plus-outline" size={60} color={Colors.gray300} />
-                            <Text style={{ color: Colors.gray500, fontSize: 16, marginTop: 10 }}>Démarrer la discussion</Text>
-                        </View>
-                    )}
-                />
-            </View>
+                <View style={{ flex: 1, }}>
+                    <FlatList
+                        ref={flatListRef}
+                        data={messages}
+                        renderItem={renderMessage}
+                        inverted
+                        keyExtractor={(item) => item.id.toString()}
+                        contentContainerStyle={{
+                            paddingHorizontal: 16,
+                            paddingBottom: 20,
+                            paddingTop: 10,
+                            flexGrow: 1
+                        }}
+                        initialNumToRender={15}
+                        ListEmptyComponent={() => loadingHistory ? (
+                            <ActivityIndicator size="large" color={THEME.gold} style={{ marginTop: 20 }} />
+                        ) : (
+                            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100, transform: [{ scaleY: -1 }] }}>
+                                <MaterialCommunityIcons name="chat-plus-outline" size={60} color={THEME.dark} />
+                                <Text style={{ color: THEME.gold, fontSize: 16, marginTop: 10 }}>Démarrer la discussion</Text>
+                            </View>
+                        )}
+                    />
+                </View>
 
-            {/* BARRE D'ENTRÉE (INPUT) */}
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
-                <View style={[styles.inputContainer, { backgroundColor: isDark ? Colors.dark.surface : Colors.light.surface, borderTopWidth: 1, borderColor: isDark ? Colors.dark.border : Colors.light.border, borderRadius: 18, marginHorizontal: 0, marginBottom: 10, shadowColor: Colors.primary, shadowOpacity: 0.08, shadowRadius: 8 }]}>
+                {/* BARRE D'ENTRÉE (INPUT) */}
+                <View style={[styles.inputContainer, { borderTopWidth: 1, borderColor: isDark ? 'transparent' : 'transparent', borderRadius: 18, marginHorizontal: 0, marginBottom: 10, shadowColor: THEME.gold, shadowOpacity: 0.08, shadowRadius: 8 }]}>
                     <TouchableOpacity
-                        style={[styles.attachBtn, { backgroundColor: Colors.primary, borderRadius: 12, marginRight: 6 }]}
+                        style={[styles.attachBtn, { borderRadius: 12, marginRight: 6 }]}
                         onPress={() => {
                             LayoutAnimation.easeInEaseOut();
                             setShowAttachMenu(!showAttachMenu);
@@ -633,7 +642,7 @@ export default function ConciergeChat({ otherUserId, onClose, boutique }: Concie
                         </Animated.View>
                     </TouchableOpacity>
 
-                    <View style={[styles.textInputWrapper, { backgroundColor: isDark ? Colors.dark.surfaceVariant : Colors.gray200 }]}>
+                    <View style={[styles.textInputWrapper, {}]}>
                         {isRecordingAudio ? (
                             <View style={styles.recordingRow}>
                                 <View style={styles.redDot} />
@@ -643,7 +652,7 @@ export default function ConciergeChat({ otherUserId, onClose, boutique }: Concie
                         ) : (
                             <TextInput
                                 ref={inputRef}
-                                style={[styles.textInput, { color: isDark ? '#FFF' : '#1E293B' }]}
+                                style={[styles.textInput, { color: isDark ? '#FFF' : '#2c313a' }]}
                                 placeholder="Votre message..."
                                 placeholderTextColor="#94A3B8"
                                 value={inputText}
@@ -663,7 +672,7 @@ export default function ConciergeChat({ otherUserId, onClose, boutique }: Concie
                         )}
 
                         {!isRecordingAudio && (
-                            <TouchableOpacity onPress={() => setShowCamera(true)} style={[styles.camInputBtn, { backgroundColor: Colors.accent, borderRadius: 10, marginLeft: 6, padding: 6 }]}>
+                            <TouchableOpacity onPress={() => setShowCamera(true)} style={[styles.camInputBtn, { backgroundColor: isDark ? THEME.gold : THEME.gold, borderRadius: 10, marginLeft: 6, padding: 6 }]}>
                                 <Feather name="camera" size={20} color="#FFF" />
                             </TouchableOpacity>
                         )}
@@ -672,14 +681,14 @@ export default function ConciergeChat({ otherUserId, onClose, boutique }: Concie
                     <View style={styles.mainActionWrapper}>
                         {inputText.trim().length > 0 ? (
                             <TouchableOpacity
-                                style={[styles.sendButton, { backgroundColor: Colors.primary, shadowColor: Colors.primary, shadowOpacity: 0.18, shadowRadius: 8 }]}
+                                style={[styles.sendButton, { backgroundColor: THEME.gold, shadowColor: THEME.gold, shadowOpacity: 0.18, shadowRadius: 8 }]}
                                 onPress={() => sendMessage('text', inputText)}
                             >
                                 <Ionicons name="send" size={20} color="#FFF" />
                             </TouchableOpacity>
                         ) : (
                             <TouchableOpacity
-                                style={[styles.micButton, isRecordingAudio && styles.micButtonActive, { backgroundColor: Colors.accent }]}
+                                style={[styles.micButton, isRecordingAudio && styles.micButtonActive, { backgroundColor: THEME.gold }]}
                                 onLongPress={() => {
                                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                                     startAudioRecording();
@@ -694,12 +703,12 @@ export default function ConciergeChat({ otherUserId, onClose, boutique }: Concie
 
                 {/* MENU ATTACHEMENTS */}
                 {showAttachMenu && (
-                    <BlurView intensity={100} tint={isDark ? 'dark' : 'light'} style={[styles.attachMenu, { backgroundColor: isDark ? 'rgba(15,23,42,0.85)' : 'rgba(255,255,255,0.85)', borderRadius: 18, marginHorizontal: 10, marginBottom: 10 }]}>
+                    <BlurView intensity={100} style={[styles.attachMenu, { backgroundColor: isDark ? '#1e293b00' : 'rgba(255, 255, 255, 0)', borderRadius: 38, marginHorizontal: 15, marginBottom: 10, }]}>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.attachScroll}>
                             <AttachItem
                                 icon="image"
                                 label="Galerie"
-                                color={Colors.primary}
+                                color={THEME.gold}
                                 onPress={async () => {
                                     try {
                                         // On appelle la fonction utilitaire
@@ -716,83 +725,83 @@ export default function ConciergeChat({ otherUserId, onClose, boutique }: Concie
                                     }
                                 }}
                             />
-                            <AttachItem icon="camera" label="Appareil" color={Colors.accent} onPress={() => setShowCamera(true)} />
-                            <AttachItem icon="file-text" label="Document" color={Colors.secondary} onPress={async () => {
+                            <AttachItem icon="camera" label="Appareil" color={THEME.gold} onPress={() => setShowCamera(true)} />
+                            <AttachItem icon="file-text" label="Document" color={THEME.gold} onPress={async () => {
                                 const res = await DocumentPicker.getDocumentAsync({ type: 'application/pdf' });
                                 if (!res.canceled) {
                                     const url = await uploadFile(res.assets[0].uri, 'files');
                                     if (url) sendMessage('file', url, { file_name: res.assets[0].name });
                                 }
                             }} />
-                            <AttachItem icon="map-pin" label="Lieu" color={Colors.success} onPress={() => { }} />
+                            <AttachItem icon="map-pin" label="Lieu" color={THEME.success} onPress={() => { }} />
                         </ScrollView>
                     </BlurView>
                 )}
                 <View style={{ height: insets.bottom + 5 }} />
+
+                {/* MODALES (CAMÉRA, VISIONNEUSE, ETC.) à compléter si besoin */}
+                {/* VISIONNEUSE D'IMAGE */}
+                <Modal visible={!!selectedImage} transparent animationType="fade">
+                    <View style={styles.viewerContainer}>
+                        <TouchableOpacity style={styles.closeViewer} onPress={() => setSelectedImage(null)}>
+                            <Ionicons name="close" size={30} color="#FFF" />
+                        </TouchableOpacity>
+                        {selectedImage && (
+                            <Image source={{ uri: selectedImage }} style={styles.viewerImage} resizeMode="contain" />
+                        )}
+                    </View>
+                </Modal>
+
+                {/* MODALE CAMÉRA PLEIN ÉCRAN */}
+                <Modal visible={showCamera} animationType="slide">
+                    <View style={{ flex: 1, backgroundColor: '#1E293B' }}>
+                        <CameraView
+                            ref={cameraRef}
+                            style={{ flex: 1 }}
+                            facing={cameraType}
+                            mode={isRecordingVideo ? "video" : "picture"}
+                        >
+                            <SafeAreaView style={{ flex: 1, justifyContent: 'space-between' }}>
+                                <View style={styles.cameraHeader}>
+                                    <TouchableOpacity onPress={() => setShowCamera(false)}>
+                                        <Ionicons name="close" size={32} color="#FFF" />
+                                    </TouchableOpacity>
+                                    {isRecordingVideo && (
+                                        <View style={styles.videoTimerBox}>
+                                            <View style={styles.redDot} />
+                                            <Text style={styles.videoTimerText}>{formatTime(videoTimer)}</Text>
+                                        </View>
+                                    )}
+                                    <TouchableOpacity onPress={() => setCameraType(t => t === 'back' ? 'front' : 'back')}>
+                                        <Ionicons name="camera-reverse" size={32} color="#FFF" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <View style={styles.cameraFooter}>
+                                    <TouchableOpacity
+                                        onLongPress={toggleVideoRecording}
+                                        onPress={takePhoto}
+                                        style={[styles.captureBtn, isRecordingVideo && styles.captureBtnRecording]}
+                                    >
+                                        <View style={[styles.captureBtnInner, isRecordingVideo && { borderRadius: 8 }]} />
+                                    </TouchableOpacity>
+                                </View>
+                            </SafeAreaView>
+                        </CameraView>
+                    </View>
+                </Modal>
             </KeyboardAvoidingView>
-
-            {/* MODALES (CAMÉRA, VISIONNEUSE, ETC.) à compléter si besoin */}
-            {/* VISIONNEUSE D'IMAGE */}
-            <Modal visible={!!selectedImage} transparent animationType="fade">
-                <View style={styles.viewerContainer}>
-                    <TouchableOpacity style={styles.closeViewer} onPress={() => setSelectedImage(null)}>
-                        <Ionicons name="close" size={30} color="#FFF" />
-                    </TouchableOpacity>
-                    {selectedImage && (
-                        <Image source={{ uri: selectedImage }} style={styles.viewerImage} resizeMode="contain" />
-                    )}
-                </View>
-            </Modal>
-
-            {/* MODALE CAMÉRA PLEIN ÉCRAN */}
-            <Modal visible={showCamera} animationType="slide">
-                <View style={{ flex: 1, backgroundColor: '#000' }}>
-                    <CameraView
-                        ref={cameraRef}
-                        style={{ flex: 1 }}
-                        facing={cameraType}
-                        mode={isRecordingVideo ? "video" : "picture"}
-                    >
-                        <SafeAreaView style={{ flex: 1, justifyContent: 'space-between' }}>
-                            <View style={styles.cameraHeader}>
-                                <TouchableOpacity onPress={() => setShowCamera(false)}>
-                                    <Ionicons name="close" size={32} color="#FFF" />
-                                </TouchableOpacity>
-                                {isRecordingVideo && (
-                                    <View style={styles.videoTimerBox}>
-                                        <View style={styles.redDot} />
-                                        <Text style={styles.videoTimerText}>{formatTime(videoTimer)}</Text>
-                                    </View>
-                                )}
-                                <TouchableOpacity onPress={() => setCameraType(t => t === 'back' ? 'front' : 'back')}>
-                                    <Ionicons name="camera-reverse" size={32} color="#FFF" />
-                                </TouchableOpacity>
-                            </View>
-
-                            <View style={styles.cameraFooter}>
-                                <TouchableOpacity
-                                    onLongPress={toggleVideoRecording}
-                                    onPress={takePhoto}
-                                    style={[styles.captureBtn, isRecordingVideo && styles.captureBtnRecording]}
-                                >
-                                    <View style={[styles.captureBtnInner, isRecordingVideo && { borderRadius: 8 }]} />
-                                </TouchableOpacity>
-                            </View>
-                        </SafeAreaView>
-                    </CameraView>
-                </View>
-            </Modal>
         </SafeAreaView>
     );
 }
 // --- STYLES (TRÈS DÉTAILLÉS) ---
 const styles = StyleSheet.create({
-    container: { flex: 1, overflow: 'hidden', bottom: -32, position: 'relative', backgroundColor: 'transparent' },
+    container: { flex: 1, overflow: 'hidden', position: 'relative', backgroundColor: 'transparent' },
     header: {
         paddingTop: 0,
         // paddingBottom: 15,
         zIndex: 10,
-        marginTop: 150,
+        marginTop: 0,
         borderTopLeftRadius: 24, borderTopRightRadius: 24,
 
     },
@@ -809,7 +818,7 @@ const styles = StyleSheet.create({
 
     dateHeader: { alignItems: 'center', marginVertical: 20 },
     dateHeaderText: {
-        backgroundColor: 'rgba(0,0,0,0.05)',
+        // backgroundColor: 'rgba(0,0,0,0.05)',
         paddingHorizontal: 12,
         paddingVertical: 4,
         borderRadius: 12,
@@ -825,30 +834,23 @@ const styles = StyleSheet.create({
         maxWidth: width * 0.75,
         padding: 10,
         borderRadius: 20,
-        elevation: 1,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
     },
     myBubble: {
-        backgroundColor: Colors.primary,
         borderBottomRightRadius: 4,
         marginRight: 4,
-        shadowColor: Colors.primary,
         shadowOpacity: 0.13,
         shadowRadius: 8,
-        elevation: 2,
+        backgroundColor: '#06B6D4',
     },
     theirBubble: {
-        backgroundColor: Colors.white,
         borderBottomLeftRadius: 4,
         marginLeft: 4,
         borderWidth: 0.5,
-        borderColor: Colors.gray200,
-        shadowColor: Colors.gray400,
         shadowOpacity: 0.08,
         shadowRadius: 6,
         elevation: 1,
+        backgroundColor: '#0b1e22',
+
     },
     messageText: { fontSize: 15, lineHeight: 20 },
     messageFooter: {
@@ -928,7 +930,7 @@ const styles = StyleSheet.create({
     attachMenu: {
         paddingVertical: 15,
         borderTopWidth: 0.5,
-        borderColor: 'rgba(0,0,0,0.1)'
+        borderColor: 'rgba(0,0,0,0.1)',
     },
     attachScroll: { paddingHorizontal: 20 },
     attachItem: { alignItems: 'center', marginRight: 25 },
@@ -960,7 +962,7 @@ const styles = StyleSheet.create({
     },
     innerCapture: { width: 62, height: 62, borderRadius: 31, backgroundColor: '#FFF' },
 
-    viewerContainer: { flex: 1, backgroundColor: '#000', justifyContent: 'center' },
+    viewerContainer: { flex: 1, backgroundColor: '#1E293B', justifyContent: 'center' },
     closeViewer: { position: 'absolute', top: 50, right: 20, zIndex: 10 },
     viewerImage: { width: '100%', height: '80%' },
 

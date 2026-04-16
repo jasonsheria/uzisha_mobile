@@ -502,7 +502,7 @@ export default function PropertyDetailScreen() {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Regarde ce bien incroyable sur eMobilier : ${property?.title} à ${property?.location}. Prix: ${property?.price}$ \nLien: emobilier://details/${id}`,
+        message: `Visitez cet article sur uzisha app : ${property?.title} à ${property?.location}. Prix:${property?.price}$ \nLien: \nhttps://uzisha.netlify.app/property/${id}`,
       });
     } catch (error) {
       console.log(error);
@@ -526,7 +526,7 @@ export default function PropertyDetailScreen() {
     return (
       <View style={currentStyles.loaderContainer}>
         <ActivityIndicator size="large" color="#06B6D4" />
-        <Text style={{ marginTop: 10, color: isDark ? '#FFF' : '#64748B' }}>Chargement du bien...</Text>
+        <Text style={{ marginTop: 10, color: isDark ? '#FFF' : '#64748B' }}>Chargement en cours ...</Text>
       </View>
     );
   }

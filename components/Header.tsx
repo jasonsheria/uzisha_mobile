@@ -68,7 +68,7 @@ export const Header: React.FC<any> = ({ title, subtitle }) => {
     // Déclenche l'animation dès que l'état "user" change
     Animated.spring(profileAnim, {
       toValue: user ? 1 : 0,
-      useNativeDriver: false, // Color interpolation nécessite false
+      useNativeDriver: true, // Color interpolation nécessite false
       friction: 8,
     }).start();
   }, [user]);

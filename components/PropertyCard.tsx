@@ -19,7 +19,6 @@ import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { Property } from '@/types';
 import { useColorScheme } from '@/components/useColorScheme';
-import { DynamicIcon } from '@/components/DynamicIcon';
 
 // --- CONFIGURATION ---
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -187,6 +186,7 @@ const finalImages = useMemo<string[]>(() => {
 
   const handleShare = async () => {
     try {
+      const url = `https://uzisha.netlify.app/property/${property?.id}`
       await Share.share({ message: `Regarde ça : ${property.title}`, url: finalImages[0] });
     } catch (e) { console.log(e); }
   };
@@ -224,7 +224,7 @@ const finalImages = useMemo<string[]>(() => {
             </View>
           </View>
           <TouchableOpacity onPress={handleShare}>
-            <DynamicIcon name="share-outline" size={22} />
+            <MaterialCommunityIcons name="share-outline" size={22} />
           </TouchableOpacity>
         </View>
 
@@ -232,7 +232,7 @@ const finalImages = useMemo<string[]>(() => {
         <View style={styles.textPadding}>
           <Text style={[styles.title, { color: isDark ? '#F8FAFC' : '#1E293B' }]} numberOfLines={1}>{property.title}</Text>
           <View style={styles.locRow}>
-            <DynamicIcon name="location-enter" size={14}  />
+            <MaterialCommunityIcons name="location-enter" size={14} color={'#06B6D4'} />
             <Text style={styles.locText}>{property.location}</Text>
           </View>
         </View>
@@ -247,8 +247,8 @@ const finalImages = useMemo<string[]>(() => {
         <View style={styles.infoRow}>
           {isRealEstate ? (
             <View style={styles.specs}>
-              <View style={styles.specItem}><DynamicIcon name="bed-double-outline" size={14}  /><Text style={styles.specVal}>{property.beds || 0}</Text></View>
-              <View style={styles.specItem}><DynamicIcon name="bathtub" size={14}  /><Text style={styles.specVal}>{property.baths || 0}</Text></View>
+              <View style={styles.specItem}><MaterialCommunityIcons name="bed-double-outline" size={14}  /><Text style={styles.specVal}>{property.beds || 0}</Text></View>
+              <View style={styles.specItem}><MaterialCommunityIcons name="bathtub" size={14}  /><Text style={styles.specVal}>{property.baths || 0}</Text></View>
             </View>
           ) : (
             <View style={styles.specs}>
@@ -266,7 +266,7 @@ const finalImages = useMemo<string[]>(() => {
               )}
             </View>
           )}
-          <Animated.Text style={[styles.price, { color: dynamicColor }]}>${property.price?.toLocaleString()}</Animated.Text>
+          <Animated.Text style={[styles.price, { color: isDark ? '#F1F5F9' : '#06B6D4' }]}>${property.price?.toLocaleString()}</Animated.Text>
         </View>
 
         {/* FOOTER ACTIONS */}
@@ -276,8 +276,8 @@ const finalImages = useMemo<string[]>(() => {
           </TouchableOpacity>
 
           <View style={[styles.swipeTrack, { backgroundColor: isDark ? '#0F172A' : '#F1F5F9' }]}>
-            <Animated.Text style={[styles.swipeHint, {color : dynamicColor}]}>Contact</Animated.Text>
-            <Animated.View {...panResponder.panHandlers} style={[styles.swipeHandle, { transform: [{ translateX: swipeX }], backgroundColor: dynamicColor }]}> 
+            <Animated.Text style={[styles.swipeHint, {color : isDark ? '#F1F5F9' : '#0F172A'}]}>Contact</Animated.Text>
+            <Animated.View {...panResponder.panHandlers} style={[styles.swipeHandle, { transform: [{ translateX: swipeX }], backgroundColor: '#06B6D4' }]}> 
               <Ionicons name="chatbubble-ellipses" size={20} color="#FFF" />
             </Animated.View>
           </View>

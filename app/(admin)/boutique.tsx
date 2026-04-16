@@ -20,13 +20,14 @@ import {
 import { supabase } from '@/utils/supabase';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { pickImage, uploadShopAsset } from '@/utils/uploadService';
-import { MaterialCommunityIcons, Ionicons, Feather } from '@expo/vector-icons';
+import { Ionicons, Feather } from '@expo/vector-icons';
 import { useColorScheme } from '@/components/useColorScheme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MotiView } from 'moti';
 import { BOUTIQUE, Property } from '@/types';
-
+import { useTheme } from '@/contexts/ThemeContext';
 const { width } = Dimensions.get('window');
+import { DynamicIcon } from '@/components/DynamicIcon';
 
 // Interface étendue pour inclure les types d'articles (tags)
 interface BoutiqueExtended extends BOUTIQUE {
@@ -36,8 +37,7 @@ interface BoutiqueExtended extends BOUTIQUE {
 export default function BoutiqueManagerScreen() {
   const { user } = useAuthContext();
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-
+  const {isDark, dynamicColor, theme} = useTheme();
   // --- ÉTATS PRINCIPAUX ---
   const [loading, setLoading] = useState(false);
   const [boutiques, setBoutiques] = useState<BoutiqueExtended[]>([]);
@@ -282,7 +282,7 @@ export default function BoutiqueManagerScreen() {
   const filteredBoutiques = useMemo(() => {
     return boutiques.filter(b =>
       b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (b.Ville && b.Ville.toLowerCase().includes(searchQuery.toLowerCase()))
+      (b.ville && b.ville.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   }, [searchQuery, boutiques]);
 
@@ -294,7 +294,7 @@ export default function BoutiqueManagerScreen() {
       adresse: boutique.adresse || '',
       phone: boutique.phone || '',
       province: boutique.province || '',
-      ville: boutique.Ville || '',
+      ville: boutique.ville || '',
       commune: boutique.commune || '',
       image: boutique.image || '',
       logo: boutique.logo || '',
@@ -312,7 +312,7 @@ export default function BoutiqueManagerScreen() {
         <View style={styles.headerTop}>
           <View>
             <Text style={[styles.welcomeText, { color: isDark ? '#94A3B8' : '#64748B' }]}>Gestionnaire</Text>
-            <Text style={[styles.mainTitle, { color: isDark ? '#FFF' : '#1E293B' }]}>Mes Enseignes</Text>
+            <Text style={[styles.mainTitle, { color: isDark ? '#FFF' : '#06B6D4' }]}>Mes Boutiques</Text>
           </View>
           <TouchableOpacity style={[styles.statsBtn, { backgroundColor: isDark ? '#1E293B' : '#EEF2FF' }]}>
             <Feather name="pie-chart" size={22} color="#06B6D4" />
@@ -359,7 +359,7 @@ export default function BoutiqueManagerScreen() {
                     <Image source={{ uri: item.logo || 'https://via.placeholder.com/50' }} style={styles.cardLogo} />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.cardName} numberOfLines={1}>{item.name}</Text>
-                      <Text style={styles.cardCity}>{item.Ville || 'RDC'}</Text>
+                      <Text style={styles.cardCity}>{item.ville || 'RDC'}</Text>
                     </View>
                   </View>
                 </LinearGradient>
@@ -368,7 +368,7 @@ export default function BoutiqueManagerScreen() {
           )}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <MaterialCommunityIcons name="store-plus-outline" size={80} color={isDark ? '#1E293B' : '#E2E8F0'} />
+              <DynamicIcon name="store-plus-outline" size={80} />
               <Text style={[styles.emptyTitle, { color: isDark ? '#FFF' : '#1E293B' }]}>Aucune boutique</Text>
               <Text style={styles.emptyText}>Commencez par créer votre premier point de vente pour vendre vos articles.</Text>
             </View>
@@ -385,7 +385,7 @@ export default function BoutiqueManagerScreen() {
           setIsCreateModalVisible(true);
         }}
       >
-        <LinearGradient colors={['#06B6D4', '#4F46E5']} style={styles.fabGradient}>
+        <LinearGradient colors={['#06B6D4', '#06B6D4']} style={styles.fabGradient}>
           <Ionicons name="add" size={32} color="white" />
         </LinearGradient>
       </TouchableOpacity>
@@ -395,9 +395,9 @@ export default function BoutiqueManagerScreen() {
         <SafeAreaView style={[styles.modalContainer, { backgroundColor: isDark ? '#0F172A' : '#F8FAFC' }]}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setIsAdminModalVisible(false)} style={styles.closeBtn}>
-              <Ionicons name="close" size={24} color={isDark ? '#FFF' : '#000'} />
+              <Ionicons name="close" size={24} color={isDark ? '#FFF' : '#06B6D4'} />
             </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: isDark ? '#FFF' : '#000' }]}>Configuration</Text>
+            <Text style={[styles.modalTitle, { color: isDark ? '#FFF' : '#06B6D4', fontWeight : 'bold' }]}>Configuration</Text>
             <TouchableOpacity onPress={() => handleDeleteBoutique(selectedBoutique!.id)} style={styles.deleteBtnTop}>
               <Feather name="trash-2" size={22} color="#EF4444" />
             </TouchableOpacity>
@@ -407,7 +407,7 @@ export default function BoutiqueManagerScreen() {
             <View style={styles.visualHeader}>
               <TouchableOpacity onPress={() => handlePickMedia('image')} style={styles.bannerContainer}>
                 <Image source={{ uri: form.image || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800' }} style={styles.bannerImg} />
-                <View style={styles.cameraOverlay}><MaterialCommunityIcons name="camera-plus" size={28} color="#FFF" /></View>
+                <View style={styles.cameraOverlay}><DynamicIcon name="camera-plus" size={28} /></View>
               </TouchableOpacity>
 
               <TouchableOpacity onPress={() => handlePickMedia('logo')} style={[styles.logoCircle, { borderColor: isDark ? '#0F172A' : '#F8FAFC' }]}>
@@ -446,7 +446,7 @@ export default function BoutiqueManagerScreen() {
                             : addTag(cat.value)
                         }
                       >
-                        <MaterialCommunityIcons name={cat.icon as any} size={16} color={form.category_tags.includes(cat.value) ? '#fff' : (isDark ? '#E2E8F0' : '#4338CA')} style={{ marginRight: 4 }} />
+                        <DynamicIcon name={cat.icon as any} size={16}  style={{ marginRight: 4 }} />
                         <Text style={{ color: form.category_tags.includes(cat.value) ? '#fff' : (isDark ? '#E2E8F0' : '#4338CA'), fontWeight: 'bold', fontSize: 13 }}>{cat.label}</Text>
                         {form.category_tags.includes(cat.value) && (
                           <Ionicons name="close-circle" size={16} color="#fff" style={{ marginLeft: 4 }} />
@@ -465,12 +465,12 @@ export default function BoutiqueManagerScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <InputBox label="Province" value={form.province} onChange={(t: string) => setForm({ ...form, province: t })} isDark={isDark} icon="map-outline" />
-                </View>
+                </View> 
               </View>
 
               <TouchableOpacity style={styles.mainSaveBtn} onPress={handleUpdateBoutique} disabled={isUpdating}>
-                <LinearGradient colors={['#06B6D4', '#4F46E5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.saveGradient}>
-                  {isUpdating ? <ActivityIndicator color="#FFF" /> : (
+                <LinearGradient colors={['#06B6D4', '#94A3B8']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.saveGradient}>
+                  {isUpdating ? <ActivityIndicator color="#FFF" /> : ( 
                     <>
                       <Ionicons name="checkmark-circle-outline" size={22} color="#FFF" />
                       <Text style={styles.mainSaveText}>Enregistrer la configuration</Text>
@@ -515,7 +515,7 @@ export default function BoutiqueManagerScreen() {
             <View style={[styles.linkContent, { backgroundColor: isDark ? '#1E293B' : '#FFF' }]}>
               <View style={styles.modalDrag} />
               <Text style={[styles.linkTitle, { color: isDark ? '#FFF' : '#000' }]}>Sélectionner un article</Text>
-              <Text style={styles.linkSub}>Liez vos articles orphelins à cette boutique.</Text>
+              <Text style={styles.linkSub}>Liez vos articles Libres à cette boutique.</Text>
 
               <FlatList
                 data={myProperties.filter(p => !p?.boutique_id)}
@@ -523,7 +523,7 @@ export default function BoutiqueManagerScreen() {
                 style={{ maxHeight: 350 }}
                 renderItem={({ item }) => (
                   <TouchableOpacity style={[styles.linkItem, { backgroundColor: isDark ? '#0F172A' : '#F8FAFC' }]} onPress={() => linkArticleToBoutique(item.id)}>
-                    <Image source={{ uri: item.image }} style={styles.linkItemImg} />
+                    <Image source={{ uri: item.images[0] }} style={styles.linkItemImg} />
                     <View style={{ flex: 1, marginLeft: 12 }}>
                       <Text style={[styles.linkItemName, { color: isDark ? '#FFF' : '#1E293B' }]}>{item.title}</Text>
                       <Text style={styles.linkItemPrice}>{item.price} $</Text>
@@ -556,9 +556,9 @@ export default function BoutiqueManagerScreen() {
                 <Text style={{ color: '#94A3B8', fontWeight: '700' }}>Annuler</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.confirmBtn} onPress={handleCreateBoutique}>
-                <LinearGradient colors={['#06B6D4', '#4F46E5']} style={styles.confirmGradient}>
+                <LinearGradient colors={['#94A3B8', '#06B6D4']} style={styles.confirmGradient}>
                   <Text style={{ color: '#FFF', fontWeight: '800' }}>Lancer</Text>
-                </LinearGradient>
+                </LinearGradient> 
               </TouchableOpacity>
             </View>
           </MotiView>
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
   headerContainer: { paddingHorizontal: 20, paddingVertical: 15 },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   welcomeText: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase' },
-  mainTitle: { fontSize: 28, fontWeight: '900', letterSpacing: -0.5 },
+  mainTitle: { fontSize: 22, fontWeight: '900', letterSpacing: -0.5 },
   statsBtn: { width: 45, height: 45, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
   searchBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, height: 50, borderRadius: 18, borderWidth: 1 },
   searchInput: { flex: 1, marginLeft: 10, fontSize: 16, fontWeight: '600' },
@@ -603,16 +603,16 @@ const styles = StyleSheet.create({
   cardLogo: { width: 38, height: 38, borderRadius: 12, marginRight: 8, borderWidth: 2, borderColor: '#FFF' },
   cardName: { color: '#FFF', fontWeight: '800', fontSize: 15 },
   cardCity: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '600' },
-  fab: { position: 'absolute', bottom: 30, right: 25, width: 60, height: 60, borderRadius: 20, elevation: 8 },
-  fabGradient: { flex: 1, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  fab: { position: 'absolute', bottom: 30, right: 25, width: 60, height: 60, borderRadius: 45, elevation: 8 },
+  fabGradient: { flex: 1, borderRadius: 35, justifyContent: 'center', alignItems: 'center' },
   emptyState: { alignItems: 'center', marginTop: 100, paddingHorizontal: 40 },
   emptyTitle: { fontSize: 20, fontWeight: '800', marginTop: 20 },
   emptyText: { color: '#94A3B8', marginTop: 10, textAlign: 'center', lineHeight: 20 },
 
   // MODAL STYLES
   modalContainer: { flex: 1 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, height: 60, marginTop: 10 },
-  closeBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, height: 60, marginTop: 40 },
+  closeBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(214, 224, 239, 0.38)',  },
   modalTitle: { fontSize: 18, fontWeight: '800' },
   deleteBtnTop: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   modalScroll: { flex: 1 },
@@ -650,7 +650,6 @@ const styles = StyleSheet.create({
   addPropAction: { width: 100, height: 135 },
   addPropInner: { flex: 1, borderRadius: 22, borderStyle: 'dashed', borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
   addPropText: { fontSize: 12, color: '#06B6D4', fontWeight: '800', marginTop: 5 },
-
   // MODALE LINK
   linkOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
   linkContent: { borderTopLeftRadius: 35, borderTopRightRadius: 35, padding: 25, minHeight: 500 },
@@ -660,11 +659,10 @@ const styles = StyleSheet.create({
   linkItem: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 18, marginBottom: 10 },
   linkItemImg: { width: 60, height: 60, borderRadius: 14 },
   linkItemName: { fontSize: 15, fontWeight: '700' },
-  linkItemPrice: { color: '#10B981', fontWeight: '800', marginTop: 2 },
+  linkItemPrice: { color: '#06B6D4', fontWeight: '800', marginTop: 2 },
   emptyLink: { textAlign: 'center', color: '#94A3B8', marginTop: 30, fontWeight: '600' },
   closeLinkBtn: { backgroundColor: '#F1F5F9', padding: 15, borderRadius: 15, alignItems: 'center', marginTop: 15 },
   closeLinkText: { fontWeight: '800', color: '#64748B' },
-
   // CREATE MODAL
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
   createCard: { width: width * 0.9, padding: 25, borderRadius: 30, elevation: 20 },
@@ -673,7 +671,6 @@ const styles = StyleSheet.create({
   cancelBtn: { paddingHorizontal: 20 },
   confirmBtn: { width: 120, height: 50, borderRadius: 15, overflow: 'hidden' },
   confirmGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-
   inputWrapper: { marginBottom: 15 },
   label: { fontSize: 13, fontWeight: '800', marginBottom: 8, marginLeft: 4 },
   inputContainer: { flexDirection: 'row', borderRadius: 16 },

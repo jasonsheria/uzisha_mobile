@@ -10,7 +10,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { useAuth } from '@/hooks/useAuth';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthProvider, useAuthContext } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { useForceUpdateCheck } from '@/utils/useForceUpdateCheck';
 import Preloader from '@/components/Preloader';
@@ -41,7 +41,6 @@ export const linking = {
 export default function RootLayout() {
   const [isConnected, setIsConnected] = useState(true);
   const { isBlocked, message, obsoleteDate } = useForceUpdateCheck();
-  
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
@@ -97,6 +96,7 @@ export default function RootLayout() {
 function ContentGuard({ loaded, isConnected, isBlocked, message, obsoleteDate }: any) {
   const { loading } = useAuth(); // Maintenant utilisable car dans AuthProvider
   const colorScheme = useColorScheme();
+  const { user } = useAuthContext();
 
   // 1. Attente du chargement des ressources (Fonts + Auth Session)
   if (!loaded || loading) {
@@ -117,7 +117,7 @@ function ContentGuard({ loaded, isConnected, isBlocked, message, obsoleteDate }:
   return (
     <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
+        <Stack.Screen name="index" key={user?.id || 'guest'} />
         {/* Ajoute d'autres Stack.Screen si nécessaire */}
       </Stack>
     </NavigationThemeProvider>

@@ -84,9 +84,8 @@ export default function AdminDrawerContent() {
     { id: 'reservations', label: 'Réservations', icon: 'calendar-check-outline', activeIcon: 'calendar-check', href: '/(admin)/reservations', badge: stats.reservations },
     { id: 'calendar', label: 'Disponibilités', icon: 'calendar-month-outline', activeIcon: 'calendar-month', href: '/(admin)/calendar' },
     { id: 'subscription', label: 'Mon Abonnement', icon: 'credit-card-outline', activeIcon: 'credit-card', href: '/(admin)/subscription', badge: 'Pro' },
-    { id: 'boutique', label: 'E-boutique', icon: 'shopping-cart', activeIcon: 'shopping-cart-outline', href: '/(admin)/boutique' },
+    { id: 'boutique', label: 'Mes-boutique', icon: 'selection-multiple-marker', activeIcon: 'shopping-cart-outline', href: '/(admin)/boutique' },
     { id: 'profile', label: 'Configuration', icon: 'cog-outline', activeIcon: 'cog', href: '/(admin)/profile' },
-    { id: 'home', label: 'Page d`\acceuille', icon: 'home', activeIcon: 'home-outline', href: '/(tabs)/' },
   ];
 
   return (

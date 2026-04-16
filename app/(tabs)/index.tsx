@@ -34,7 +34,7 @@ import {
 import { BlurView } from 'expo-blur';
 import { MotiView, MotiText, AnimatePresence } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { Color, router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { PropertyCategories } from '@/constants/PropertyCategories';
 import * as Haptics from 'expo-haptics';
@@ -62,6 +62,7 @@ import Presentation from '@/components/Presentation';
 import AgenceImmoCard from '@/components/AgenceImmoCard';
 import { useTheme } from '@/contexts/ThemeContext';
 import { DynamicIcon } from '@/components/DynamicIcon';
+import { useAuthContext } from '@/contexts/AuthContext';
 const partenaires = require('../../assets/images/partenaire.jpg');
 interface Category {
   id: PropertyType;
@@ -71,7 +72,7 @@ interface Category {
 const HEADER_MAX_HEIGHT = height * 0.6;
 const HEADER_MIN_HEIGHT = Platform.OS === 'ios' ? 120 : 90;
 const HEADER_SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
-
+import { useFocusEffect } from '@react-navigation/native';
 // --- COMPOSANTS ATOMIQUES ---
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
@@ -188,9 +189,10 @@ export default function HomeScreen() {
   };
 
   // Charger les boutiques au montage
-  useEffect(() => {
-    loadBoutiques();
-  }, []);
+ useEffect(() => {
+  loadArticles();
+  loadBoutiques();
+}, []); 
 
   const { isDark, toggleTheme, dynamicColor } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
@@ -203,37 +205,39 @@ export default function HomeScreen() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const themeAnim = useRef(new Animated.Value(isDark ? 1 : 0)).current;
-const SkeletonPulse = ({ style }: { style?: any }) => {
-  const isDark = useColorScheme() === 'dark';
-  const opacity = useRef(new Animated.Value(0.3)).current;
+  const { user } = useAuthContext();
 
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
-      ])
-    ).start();
-  }, []);
+  const SkeletonPulse = ({ style }: { style?: any }) => {
+    const isDark = useColorScheme() === 'dark';
+    const opacity = useRef(new Animated.Value(0.3)).current;
 
-  return (
-    <Animated.View
-      style={[
-        styles.skeleton,
-        { 
-          opacity, 
-          backgroundColor: isDark ? '#2A2A2A' : '#E0E0E0' // Couleurs plus contrastées
-        },
-        style,
-      ]}
-    />
-  );
-};
+    useEffect(() => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
+          Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+        ])
+      ).start();
+    }, []);
+
+    return (
+      <Animated.View
+        style={[
+          styles.skeleton,
+          {
+            opacity,
+            backgroundColor: isDark ? '#2A2A2A' : '#E0E0E0' // Couleurs plus contrastées
+          },
+          style,
+        ]}
+      />
+    );
+  };
   useEffect(() => {
     Animated.timing(themeAnim, {
       toValue: isDark ? 1 : 0,
       duration: 400,
-      useNativeDriver: false,
+      useNativeDriver: true,
     }).start();
   }, [isDark]);
 
@@ -244,11 +248,10 @@ const SkeletonPulse = ({ style }: { style?: any }) => {
 
   useEffect(() => {
     // Simule le chargement des données (remplacez par votre logique réelle)
-    loadArticles();
     const timer = setTimeout(() => setLoading(false), 1200);
     return () => clearTimeout(timer);
   }, []);
-
+  
   const loadArticles = async () => {
     try {
       setLoading(true);
@@ -358,29 +361,29 @@ const SkeletonPulse = ({ style }: { style?: any }) => {
       <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#FFF', flex: 1 }]}>
         {/* 2. On imite la hauteur du header pour éviter le saut visuel */}
         <SkeletonPulse style={{ height: HEADER_MAX_HEIGHT, borderRadius: 0 }} />
-        
+
         <View style={styles.skeletonBody}>
           {/* Titre */}
           <SkeletonPulse style={{ width: '70%', height: 35, marginBottom: 30, marginTop: 10 }} />
-          
+
           {/* Stats Row */}
           <View style={{ flexDirection: 'row', gap: 15, marginBottom: 40 }}>
             <SkeletonPulse style={{ flex: 1, height: 80, borderRadius: 20 }} />
             <SkeletonPulse style={{ flex: 1, height: 80, borderRadius: 20 }} />
             <SkeletonPulse style={{ flex: 1, height: 80, borderRadius: 20 }} />
           </View>
-  
+
           {/* Grille de produits */}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
             {[1, 2, 3, 4].map((i) => (
-              <SkeletonPulse 
-                key={i} 
-                style={{ 
+              <SkeletonPulse
+                key={i}
+                style={{
                   width: (width - 60) / 2, // Calculez pour correspondre à vos colonnes
-                  height: 250, 
-                  borderRadius: 24, 
-                  marginBottom: 20 
-                }} 
+                  height: 250,
+                  borderRadius: 24,
+                  marginBottom: 20
+                }}
               />
             ))}
           </View>
@@ -391,7 +394,7 @@ const SkeletonPulse = ({ style }: { style?: any }) => {
   return (
     <Animated.View style={[styles.container, { backgroundColor: bgColor }]}>
       <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}>
-        
+
         {/* <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} /> */}
 
         {/* <Header title="eMobilier" subtitle="L'excellence immobilière" /> */}
@@ -415,9 +418,9 @@ const SkeletonPulse = ({ style }: { style?: any }) => {
             {/* HEADER : LOGO + TITRE + ACTIONS */}
             <View style={styles.searchHeader}>
               <View style={styles.headerLeft}>
-                <Animated.View style={[styles.logoBadge, { backgroundColor: dynamicColor }]}>
-                  <MaterialCommunityIcons name="abacus" size={20} color="white" />
-                </Animated.View>
+                {/* <Animated.View style={[styles.logoBadge, { backgroundColor: dynamicColor }]}> */}
+                  {/* <MaterialCommunityIcons name="abacus" size={20} color="white" /> */}
+                {/* </Animated.View> */}
                 <Text style={[styles.sectionTitle, { color: isDark ? '#F1F5F9' : '#1E293B' }]}>
                   Uzisha
                 </Text>
@@ -430,7 +433,7 @@ const SkeletonPulse = ({ style }: { style?: any }) => {
                     toggleTheme(); // Assurez-vous que toggleTheme est récupéré de useTheme()
                   }}
                   style={[styles.actionBtn, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
-                  <DynamicIcon
+                  <MaterialCommunityIcons
                     name={isDark ? "white-balance-sunny" : "moon-waning-crescent"}
                     size={20}
                   />
@@ -474,7 +477,7 @@ const SkeletonPulse = ({ style }: { style?: any }) => {
           </View> */}
 
             {/* MODE D'AFFICHAGE */}
-            <View style={styles.viewModeContainer}>
+            {/* <View style={styles.viewModeContainer}>
               <Text style={[styles.viewModeLabel, { color: isDark ? '#94A3B8' : '#64748B' }]}>Style d'affichage</Text>
               <View style={styles.viewModeButtons}>
                 {[
@@ -493,17 +496,17 @@ const SkeletonPulse = ({ style }: { style?: any }) => {
                       // viewMode === mode.id && styles.modeBtnActive
                     ]}
                   >
-                    <Animated.View style={[styles.modeBtn, { backgroundColor: viewMode === mode.id ? dynamicColor : 'transparent' }]}>
+                    <Animated.View style={[styles.modeBtn, { backgroundColor: viewMode === mode.id ? Colors.eventSpaceColor : isDark ? '#1E293B' : '#FFFFFF' }]}>
                       <MaterialCommunityIcons
                         name={mode.icon as any}
                         size={17}
-                        color="white"
+                        color={viewMode === mode.id ? '#FFF' : isDark ? '#F1F5F9' : '#1E293B'}
                       />
                     </Animated.View>
                   </TouchableOpacity>
                 ))}
               </View>
-            </View>
+            </View> */}
           </MotiView>
           {/* 4. CATÉGORIES REDESSINÉES - SANS ARRONDIS - PREMIUM ANIMATED */}
           <View style={styles.categorySection}>
@@ -692,7 +695,7 @@ const MemoizedCategoryButton = React.memo(
       Animated.timing(animatedValue, {
         toValue: isSelected ? 1 : 0,
         duration: 350,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }).start();
     }, [isSelected]);
 
@@ -750,7 +753,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     zIndex: 1000,
   },
-   skeleton: { backgroundColor: '#222', borderRadius: 8 },
+  skeleton: { backgroundColor: '#222', borderRadius: 8 },
   skeletonBody: { padding: 20 },
   searchRow: {
     flexDirection: 'row',
@@ -814,10 +817,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(99,102,241,0.2)',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
+    borderColor : "transparent",
     shadowRadius: 3,
   },
   modeBtnActive: {

@@ -42,8 +42,8 @@ export default function CalendarScreen() {
   // Couleurs dynamiques
   const Colors = {
     primary: '#06B6D4',
-    success: '#10B981',
-    danger: '#EF4444',
+    success: '#06B6D4',
+    danger: '#e4eaed5e',
     bg: isDark ? '#0F172A' : '#F8FAFC',
     card: isDark ? '#1E293B' : '#FFFFFF',
     text: isDark ? '#F1F5F9' : '#0F172A',
@@ -132,11 +132,11 @@ export default function CalendarScreen() {
                       { backgroundColor: isDateAvailable(day) ? Colors.success : Colors.danger }
                     ]}
                   >
-                    <Text style={styles.dayText}>{day}</Text>
+                    <Text style={[styles.dayText, { color: isDateAvailable(day) ? Colors.bg : '#06B6D4' }]}>{day}</Text>
                     <MaterialCommunityIcons 
                       name={isDateAvailable(day) ? "check" : "close"} 
                       size={10} 
-                      color="#FFF" 
+                      color="#06B6D4" 
                     />
                   </TouchableOpacity>
                 ) : null}
@@ -218,10 +218,10 @@ const styles = StyleSheet.create({
   dayButton: {
     width: '85%',
     height: '85%',
-    borderRadius: 15,
+    borderRadius: 5,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 3,
+   
   },
   dayText: { color: '#FFF', fontWeight: '800', fontSize: 16 },
   legendContainer: { flexDirection: 'row', justifyContent: 'center', gap: 30, marginTop: 20 },

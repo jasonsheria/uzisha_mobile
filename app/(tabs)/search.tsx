@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import LottieView from 'lottie-react-native';
 import {
   View,
   Text,
-  StyleSheet,
+  StyleSheet,Animated,
   ScrollView,
   TouchableOpacity,
   Pressable,
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SearchBar } from '@/components/SearchBar';
 import { PropertyCard } from '@/components/PropertyCard';
 import { Header } from '@/components/Header';
@@ -18,14 +19,76 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { supabase } from '@/utils/supabase';
 import { Users } from '@/contexts/AdminContext';
 import { router } from 'expo-router';
-
+import { DynamicIcon } from '@/components/DynamicIcon';
+import { useTheme } from '@/contexts/ThemeContext';
 
 
 export default function SearchScreen() {
+  // Bannière animée professionnelle
+  const Banner = () => (
+    <LinearGradient
+      colors={isDark ? ['#0EA5E9', '#0369A1'] : ['#E0F2FE', '#A5F3FC']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{
+        width: '100%',
+        paddingBottom: 32,
+        paddingHorizontal: 18,
+        borderBottomLeftRadius: 36,
+        borderBottomRightRadius: 36,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 18,
+        shadowColor: '#06B6D4',
+        shadowOpacity: 0.16,
+        shadowRadius: 16,
+        elevation: 6,
+      }}
+    >
+      <View style={{ width: 120, height: 80, marginBottom: 8 }}>
+        <LottieView
+          source={require('@/assets/images/ulistrator.jpg')}
+          autoPlay
+          loop
+          style={{ width: '100%', height: '100%' }}
+        />
+      </View>
+      <Text style={{
+        fontSize: 26,
+        fontWeight: 'bold',
+        color: isDark ? '#FFF' : '#0369A1',
+        marginBottom: 8,
+        textAlign: 'center',
+        letterSpacing: 0.3,
+        textShadowColor: isDark ? '#0008' : '#FFF8',
+        textShadowRadius: 8,
+      }}>
+        Trouvez tout, facilement !
+      </Text>
+      <Text style={{
+        fontSize: 16,
+        color: isDark ? '#F1F5F9' : '#0369A1',
+        textAlign: 'center',
+        opacity: 0.92,
+        marginBottom: 2,
+      }}>
+        Recherchez des biens, services, annonces et plus encore sur toute la plateforme.
+      </Text>
+      <Text style={{
+        fontSize: 13,
+        color: isDark ? '#A5F3FC' : '#0EA5E9',
+        textAlign: 'center',
+        marginTop: 2,
+        fontStyle: 'italic',
+      }}>
+        Tapez un mot-clé ou un type de produit pour commencer votre recherche.
+      </Text>
+    </LinearGradient>
+  );
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const {isDark, theme, dynamicColor} = useTheme();
   const styles = getStyles(isDark);
-  const [Allproperty, setAllProperty] = useState<Property[]>([]); 
+  const [Allproperty, setAllProperty] = useState<Property[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<PropertyType | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
@@ -48,7 +111,7 @@ export default function SearchScreen() {
     const matchesBeds = bedrooms === 0 || (property.beds && property.beds >= bedrooms);
     const matchesArea = (property.area || 0) >= minArea;
     // const matchesRating = property.rating >= rating;
-    
+
     return matchesSearch && matchesCategory && matchesPrice && matchesBeds && matchesArea;
   }).sort((a, b) => {
     switch (sortBy) {
@@ -62,20 +125,20 @@ export default function SearchScreen() {
         return 0;
     }
   });
- useEffect(() => {
-     // Simule le chargement des données (remplacez par votre logique réelle)
-     loadArticles();
-     const timer = setTimeout(() => setLoading(false), 1200);
-     return () => clearTimeout(timer);
-   }, []);
- 
- 
-   const loadArticles = async () => {
-     try {
-       setLoading(true);
-       const { data, error } = await supabase
-         .from('properties')
-         .select(`
+  useEffect(() => {
+    // Simule le chargement des données (remplacez par votre logique réelle)
+    loadArticles();
+    const timer = setTimeout(() => setLoading(false), 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
+
+  const loadArticles = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('properties')
+        .select(`
          *,
          agent:user_id (
            id,
@@ -84,51 +147,51 @@ export default function SearchScreen() {
            avatar
          )
        `)
-         .order('created_at', { ascending: false })
-         .limit(20);
- 
-       if (error) {
-         console.error('[Load Articles Error]:', error);
-         return;
-       }
- 
-       const formattedArticles: Property[] = (data || []).map((item: any) => ({
-         id: item.id,
-         title: item.title,
-         type: item.type,
-         listingType: item.listing_type,
-         price: item.price,
-         location: item.location,
-         image: item.image,
-         images: Array.isArray(item.images) ? item.images : [item.image],
-         beds: item.beds,
-         baths: item.baths,
-         area: item.area,
-         // On s'assure que l'agent est bien structuré pour le composant PropertyCard
-         agent: item.agent || {
-           id: 'default',
-           name: 'Agent eMobilier',
-           phone: 'Contact non dispo',
-           avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400'
-         },
-         // Champs additionnels demandés par votre structure
-         reviews: item.reviews_count || 10,
-         rating: item.avg_rating || 4,
-       }));
- 
-       // CRUCIAL : On met à jour 'properties' car c'est elle qui est filtrée
-       setAllProperty(formattedArticles);
- 
-     } catch (error) {
-       console.error('[Load Articles Exception]:', error);
-     } finally {
-       setLoading(false);
-     }
-   };
-  if(loding){
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) {
+        console.error('[Load Articles Error]:', error);
+        return;
+      }
+
+      const formattedArticles: Property[] = (data || []).map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        type: item.type,
+        listingType: item.listing_type,
+        price: item.price,
+        location: item.location,
+        image: item.image,
+        images: Array.isArray(item.images) ? item.images : [item.image],
+        beds: item.beds,
+        baths: item.baths,
+        area: item.area,
+        // On s'assure que l'agent est bien structuré pour le composant PropertyCard
+        agent: item.agent || {
+          id: 'default',
+          name: 'Agent eMobilier',
+          phone: 'Contact non dispo',
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400'
+        },
+        // Champs additionnels demandés par votre structure
+        reviews: item.reviews_count || 10,
+        rating: item.avg_rating || 4,
+      }));
+
+      // CRUCIAL : On met à jour 'properties' car c'est elle qui est filtrée
+      setAllProperty(formattedArticles);
+
+    } catch (error) {
+      console.error('[Load Articles Exception]:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  if (loding) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <MaterialCommunityIcons name="loading" size={48} color={isDark ? '#64748B' : Colors.gray400} />
+        <DynamicIcon name="loading" size={48} />
         <Text style={{ marginTop: 12, color: isDark ? '#64748B' : Colors.gray500 }}>Chargement des propriétés...</Text>
       </View>
     );
@@ -138,33 +201,22 @@ export default function SearchScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="Recherche Avancée" subtitle={`${filteredProperties.length} résultats`} />
+      {/* <Header title="Recherche Avancée" subtitle={`${filteredProperties.length} résultats`} /> */}
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Stats Summary */}
-        <View style={styles.statsSummary}>
-          <View style={styles.statCard}>
-            <MaterialCommunityIcons name="home-outline" size={20} color="#06B6D4" />
-            <Text style={styles.statNumber}>{filteredProperties.length}</Text>
-            <Text style={styles.statLabel}>Total</Text>
-          </View>
-          <View style={styles.statCard}>
-            <MaterialCommunityIcons name="tag-outline" size={20} color="#10B981" />
-            <Text style={styles.statNumber}>{salesCount}</Text>
-            <Text style={styles.statLabel}>Vente</Text>
-          </View>
-          <View style={styles.statCard}>
-            <MaterialCommunityIcons name="key-outline" size={20} color="#F59E0B" />
-            <Text style={styles.statNumber}>{rentalsCount}</Text>
-            <Text style={styles.statLabel}>Location</Text>
-          </View>
-        </View>
-
+        {/* Bannière animée */}
+        <Banner />
         {/* Search Bar */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingBottom: 0, backgroundColor: 'transparent' }]}>
           <SearchBar
-            placeholder="Rechercher une propriété..."
-            onSearch={setSearchQuery}
+            placeholder="Rechercher un article..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onClear={() => setSearchQuery('')}
+            autoFocus={false}
+            style={{ backgroundColor: isDark ? '#1E293B' : '#F8FAFC' }}
+            // modifier la couleur de text interne
+            inputStyle={{ color: isDark ? '#F1F5F9' : '#0F172A' }}
           />
         </View>
 
@@ -174,10 +226,9 @@ export default function SearchScreen() {
             style={[styles.toggleButton, viewMode === 'list' && styles.toggleButtonActive]}
             onPress={() => setViewMode('list')}
           >
-            <MaterialCommunityIcons 
-              name="view-list" 
-              size={20} 
-              color={viewMode === 'list' ? '#FFFFFF' : isDark ? '#94A3B8' : Colors.gray500}
+            <DynamicIcon
+              name="view-list"
+              size={20}
             />
             <Text style={[styles.toggleButtonText, viewMode === 'list' && styles.toggleButtonTextActive]}>
               Liste
@@ -187,10 +238,9 @@ export default function SearchScreen() {
             style={[styles.toggleButton, viewMode === 'map' && styles.toggleButtonActive]}
             onPress={() => setViewMode('map')}
           >
-            <MaterialCommunityIcons 
-              name="map" 
-              size={20} 
-              color={viewMode === 'map' ? '#FFFFFF' : isDark ? '#94A3B8' : Colors.gray500}
+            <DynamicIcon
+              name="map"
+              size={20}
             />
             <Text style={[styles.toggleButtonText, viewMode === 'map' && styles.toggleButtonTextActive]}>
               Carte
@@ -200,16 +250,16 @@ export default function SearchScreen() {
 
         {/* Filter Button & Sort */}
         <View style={styles.controlsRow}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.filterButton}
             onPress={() => setShowFilters(!showFilters)}
           >
-            <MaterialCommunityIcons name="tune-vertical" size={18} color="#FFFFFF" />
+            <DynamicIcon name="tune-vertical" size={18} />
             <Text style={styles.filterButtonText}>Filtres</Text>
           </TouchableOpacity>
 
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.sortScroll}
           >
@@ -227,10 +277,9 @@ export default function SearchScreen() {
                 ]}
                 onPress={() => setSortBy(sort.id as any)}
               >
-                <MaterialCommunityIcons 
-                  name={sort.icon as any} 
-                  size={14} 
-                  color={sortBy === sort.id ? '#06B6D4' : isDark ? '#94A3B8' : Colors.gray600}
+                <DynamicIcon
+                  name={sort.icon as any}
+                  size={14}
                 />
                 <Text style={[styles.sortButtonText, sortBy === sort.id && styles.sortButtonTextActive]}>
                   {sort.label}
@@ -268,10 +317,9 @@ export default function SearchScreen() {
                     selectedCategory === category.id && styles.categoryIconContainerActive,
                   ]}
                 >
-                  <MaterialCommunityIcons
+                  <DynamicIcon
                     name={getCategoryIcon(category.id) as any}
                     size={24}
-                    color={selectedCategory === category.id ? '#06B6D4' : isDark ? '#94A3B8' : Colors.gray600}
                   />
                 </View>
                 <Text
@@ -289,11 +337,11 @@ export default function SearchScreen() {
         </View>
 
         {/* Layout Controls */}
-        <View style={styles.layoutSection}>
+        {/* <View style={styles.layoutSection}>
           <View style={styles.layoutHeader}>
             <Text style={styles.layoutLabel}>Disposition</Text>
             <View style={styles.layoutInfoBadge}>
-              <MaterialCommunityIcons name="information-outline" size={14} color="#06B6D4" />
+              <DynamicIcon name="information-outline" size={14}  />
               <Text style={styles.layoutInfoText}>{gridColumns}x affichage</Text>
             </View>
           </View>
@@ -311,10 +359,9 @@ export default function SearchScreen() {
                 ]}
                 onPress={() => setGridColumns(item.cols as 1 | 2 | 3)}
               >
-                <MaterialCommunityIcons
+                <DynamicIcon
                   name={item.icon as any}
                   size={20}
-                  color={gridColumns === item.cols ? '#FFFFFF' : '#06B6D4'}
                 />
                 <Text style={[
                   styles.layoutButtonLabel,
@@ -325,7 +372,7 @@ export default function SearchScreen() {
               </TouchableOpacity>
             ))}
           </View>
-        </View>
+        </View> */}
 
         {/* Advanced Filters Panel */}
         {showFilters && (
@@ -333,7 +380,7 @@ export default function SearchScreen() {
             {/* Price Range */}
             <View style={styles.filterGroup}>
               <View style={styles.filterLabelRow}>
-                <MaterialCommunityIcons name="currency-usd" size={16} color="#06B6D4" />
+                <DynamicIcon name="currency-usd" size={16}  />
                 <Text style={styles.filterLabel}>Prix</Text>
               </View>
               <View style={styles.priceRange}>
@@ -350,7 +397,7 @@ export default function SearchScreen() {
             {/* Bedrooms */}
             <View style={styles.filterGroup}>
               <View style={styles.filterLabelRow}>
-                <MaterialCommunityIcons name="bed" size={16} color="#06B6D4" />
+                <DynamicIcon name="bed" size={16}  />
                 <Text style={styles.filterLabel}>Chambres</Text>
               </View>
               <View style={styles.buttonGroup}>
@@ -371,7 +418,7 @@ export default function SearchScreen() {
             {/* Bathrooms */}
             <View style={styles.filterGroup}>
               <View style={styles.filterLabelRow}>
-                <MaterialCommunityIcons name="shower" size={16} color="#06B6D4" />
+                <DynamicIcon name="shower" size={16}  />
                 <Text style={styles.filterLabel}>Salles de bain</Text>
               </View>
               <View style={styles.buttonGroup}>
@@ -392,7 +439,7 @@ export default function SearchScreen() {
             {/* Minimum Area */}
             <View style={styles.filterGroup}>
               <View style={styles.filterLabelRow}>
-                <MaterialCommunityIcons name="ruler-square" size={16} color="#06B6D4" />
+                <DynamicIcon name="ruler-square" size={16}  />
                 <Text style={styles.filterLabel}>Superficie min: {minArea} m²</Text>
               </View>
               <View style={styles.buttonGroup}>
@@ -413,7 +460,7 @@ export default function SearchScreen() {
             {/* Rating */}
             <View style={styles.filterGroup}>
               <View style={styles.filterLabelRow}>
-                <MaterialCommunityIcons name="star" size={16} color="#F59E0B" />
+                <DynamicIcon name="star" size={16} />
                 <Text style={styles.filterLabel}>Note minimum: {rating}</Text>
               </View>
               <View style={styles.buttonGroup}>
@@ -468,20 +515,17 @@ export default function SearchScreen() {
                         },
                       ]}
                     >
-                      <TouchableOpacity 
-                      onPress={()=>alert('Détails de la propriété à implémenter')}
+                     
+
+                        <PropertyCard property={property} onPress={() => router.push(`/property/${property.id}`)} />
                       
-                      >
-                      
-                      <PropertyCard property={property} />
-                      </TouchableOpacity>
                     </View>
                   );
                 })}
               </View>
             ) : (
               <View style={styles.emptyState}>
-                <MaterialCommunityIcons name="magnify" size={48} color={isDark ? '#64748B' : Colors.gray400} />
+                <DynamicIcon name="magnify" size={48}  />
                 <Text style={styles.emptyText}>Aucun résultat trouvé</Text>
                 <Text style={styles.emptySubtext}>Essayez d'ajuster vos filtres</Text>
               </View>
@@ -492,21 +536,21 @@ export default function SearchScreen() {
             <Text style={styles.resultTitle}>Carte des propriétés ({filteredProperties.length})</Text>
             <View style={styles.mapContainer}>
               <View style={styles.mapPlaceholder}>
-                <MaterialCommunityIcons name="map" size={48} color={isDark ? '#64748B' : Colors.gray400} />
+                <DynamicIcon name="map" size={48} />
                 <Text style={styles.mapPlaceholderText}>Affichage des propriétés</Text>
               </View>
               <View style={styles.mapPropertyList}>
                 {filteredProperties.map((property, index) => (
                   <View key={property.id} style={styles.mapMarkerItem}>
-                    <View style={[styles.markerNumber, { backgroundColor: getMarkerColor(index) }]}>
+                    <Animated.View style={[styles.markerNumber, { backgroundColor: dynamicColor || '#06B6D4' }]}>
                       <Text style={styles.markerNumberText}>{index + 1}</Text>
-                    </View>
+                    </Animated.View>
                     <View style={styles.markerInfo}>
                       <Text style={styles.markerTitle}>{property.title}</Text>
                       <Text style={styles.markerLocation}>{property.location}</Text>
                       <Text style={styles.markerPrice}>${property.price.toLocaleString()}</Text>
                     </View>
-                    <MaterialCommunityIcons name="chevron-right" size={20} color="#06B6D4" />
+                    <DynamicIcon name="chevron-right" size={20} />
                   </View>
                 ))}
               </View>
@@ -517,11 +561,6 @@ export default function SearchScreen() {
     </View>
   );
 }
-
-const getMarkerColor = (index: number) => {
-  const colors = ['#06B6D4', '#F59E0B', '#10B981', '#EC4899', '#8B5CF6', '#F97316'];
-  return colors[index % colors.length];
-};
 
 const getCategoryIcon = (categoryId: string): string => {
   const iconMap: Record<string, string> = {
@@ -543,12 +582,12 @@ const getStyles = (isDark: boolean) =>
       backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
     },
     scrollContent: {
-      paddingTop:120,
       paddingBottom: 34,
     },
     section: {
       paddingHorizontal: 16,
       paddingVertical: 12,
+      backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
     },
     toggleContainer: {
       flexDirection: 'row',

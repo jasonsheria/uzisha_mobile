@@ -11,11 +11,13 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNotifications, Notification } from '@/contexts/NotificationContext';
+import { useNetwork } from '@/contexts/NetworkContext';
 import { useColorScheme } from '@/components/useColorScheme';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export default function NotificationsScreen() {
+  const { isConnected } = useNetwork();
   const isDark = useColorScheme() === 'dark';
   const styles = getStyles(isDark);
 
@@ -27,6 +29,9 @@ export default function NotificationsScreen() {
     toggleNotificationRead,
     markAllAsRead,
   } = useNotifications();
+
+  // Rafraîchit les notifications à la reconnexion
+  
 
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);

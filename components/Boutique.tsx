@@ -40,7 +40,7 @@ export interface BoutiqueData {
   //information physique
   province: string;
   Territoire: string;
-  Ville: string;
+  ville: string;
   commune: string
 }
 
@@ -123,7 +123,7 @@ const BoutiqueCard = ({ data, onPressStore, isDark }: Props) => {
 
       // Si c'est l'objet JSON {lat, lng}
       if (typeof item.localization === 'object') {
-        return item.localization.lat ? `GPS: ${item.localization.lat}` : item.province + ',' + item.Ville;
+        return item.localization.lat ? `GPS: ${item.localization.lat}` : item.province + ', ' + item.ville;
       }
 
       // Si c'est une string simple (Fake Data)
@@ -173,7 +173,7 @@ const BoutiqueCard = ({ data, onPressStore, isDark }: Props) => {
             <View style={styles.cardHeader}>
               <BlurView intensity={Platform.OS === 'ios' ? 25 : 80} tint="dark" style={styles.locationBadge}>
                 <DynamicIcon name="shield-check" size={14} />
-                <Text style={styles.locationText}>{locationDisplay}</Text>
+                <Text style={styles.locationText}>{item.province}, {item.ville}</Text>
               </BlurView>
             </View>
 
@@ -208,10 +208,12 @@ const BoutiqueCard = ({ data, onPressStore, isDark }: Props) => {
           <Animated.Text style={[styles.sectionTitle, { color: dynamicColor}]}>
             Boutiques Virtuelles
           </Animated.Text>
-          <Text style={styles.subtitle}>Découvrez les pépites de votre région</Text>
+          <Text style={styles.subtitle}>Découvrez les Articles devotre region</Text>
         </View>
-        <TouchableOpacity style={styles.btnIcon}>
-          <DynamicIcon name="lightning-bolt" size={20}  />
+        <TouchableOpacity style={styles.btnIcon} onPress={() => router.push('/boutiques')}>
+          {/* <DynamicIcon name="lightning-bolt" size={20}  /> */}
+          <Text style={styles.subtitle}>Tous</Text>
+
         </TouchableOpacity>
       </View>
 
@@ -266,7 +268,7 @@ const styles = StyleSheet.create({
   },
   btnIcon: {
     backgroundColor: 'rgba(6, 182, 212, 0.1)',
-    width: 42,
+    width: 62,
     height: 42,
     borderRadius: 14,
     justifyContent: 'center',
